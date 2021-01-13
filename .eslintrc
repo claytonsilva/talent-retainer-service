@@ -1,0 +1,28 @@
+{
+  "parser": "@babel/eslint-parser",
+  "extends": [
+    "standard"
+  ],
+  "rules": {
+    "space-before-function-paren": "off",
+    "immutable/no-let": 2,
+    "immutable/no-this": 2,
+    "immutable/no-mutation": 2,
+    "jest/no-disabled-tests": "warn",
+    "jest/no-focused-tests": "error",
+    "jest/no-identical-title": "error",
+    "jest/prefer-to-have-length": "warn",
+    "jest/valid-expect": "error"
+  },
+  "plugins": [
+    "fp",
+    "immutable",
+    "jest",
+    "@babel"
+  ],
+  "env": {
+    "jest/globals": true,
+    "jest": true,
+    "browser": true
+  }
+}
