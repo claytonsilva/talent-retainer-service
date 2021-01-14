@@ -23,3 +23,15 @@ export const ETalentRangeSalary = {
   BETWEEN10KAND15K: 'BETWEEN10KAND15K', // between 10.000 and 15.000 of salary
   HIGHER15K: 'HIGHER15K' // > 15.000 of salary
 }
+
+/**
+ * Enum for EOpeningStatus values.
+ * @readonly
+ * @memberof business
+ * @enum {string}
+ */
+export const EOpeningStatus = {
+  OPEN: 'OPEN', // open for matching
+  SUSPENDED: 'SUSPENDED', // temporary suspended
+  CLOSED: 'CLOSED' // the job position was filled or job position was canceled
+}
