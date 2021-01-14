@@ -1,17 +1,15 @@
-import { ETodoStatus, EPriority } from './constants'
+import { ETalentRangeSalary, ETalentStatus } from './constants'
 
 describe('constants', () => {
-  test('ETodoStatus', () => {
-    expect(ETodoStatus.CANCELED).toBe('CANCELED')
-    expect(ETodoStatus.CLOSED).toBe('CLOSED')
-    expect(ETodoStatus.IN_PROGRESS).toBe('IN_PROGRESS')
-    expect(ETodoStatus.NEW).toBe('NEW')
-    expect(ETodoStatus.WAITING_TRANSMISSION).toBe('WAITING_TRANSMISSION')
+  test('ETalentStatus', () => {
+    expect(ETalentStatus.CLOSED).toBe('CLOSED')
+    expect(ETalentStatus.LOOKING).toBe('LOOKING')
+    expect(ETalentStatus.OPEN).toBe('OPEN')
   })
-  test('EPriority', () => {
-    expect(EPriority.HIGH).toBe('HIGH')
-    expect(EPriority.LOW).toBe('LOW')
-    expect(EPriority.MODERATE).toBe('MODERATE')
-    expect(EPriority.URGENT).toBe('URGENT')
+  test('ETalentRangeSalary', () => {
+    expect(ETalentRangeSalary.BETWEEN10KAND15K).toBe('BETWEEN10KAND15K')
+    expect(ETalentRangeSalary.BETWEEN5KAND10K).toBe('BETWEEN5KAND10K')
+    expect(ETalentRangeSalary.HIGHER15K).toBe('HIGHER15K')
+    expect(ETalentRangeSalary.LOWER5K).toBe('LOWER5K')
   })
 })
