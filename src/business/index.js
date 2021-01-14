@@ -21,10 +21,6 @@ import { ETalentRangeSalary, ETalentStatus, EOpeningStatus } from './constants'
  * @property {string} id  id of the talent
  */
 
-/***
- * TALENTS MODELS
- */
-
 /**
 * @typedef {Object} Talent
 * @property {string} id  id of the task
@@ -67,7 +63,13 @@ import { ETalentRangeSalary, ETalentStatus, EOpeningStatus } from './constants'
 */
 
 /***
- * OPENINGS MODELS
+ * OPENING INFORMATION
+ */
+
+/**
+ * @typedef {Object} OpeningKey
+ * @property {string} openingEconomicSegment economic segment of the open job
+ * @property {string} id  id of the talent
  */
 
 /**
