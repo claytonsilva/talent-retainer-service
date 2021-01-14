@@ -8,15 +8,15 @@
 
 /**
  * @typedef {Object} Adapter
- * @property {TodoAdapter} todo todo adapter instantied
+ * @property {TalentAdapter} talent talent adapter instantied
  */
 
 // eslint-disable-next-line no-unused-vars
 import { DynamoRepositoryInstance } from '../ports/state-machines'
 // code imports
-import todoAdapterFactory,
+import talentAdapterFactory,
 // eslint-disable-next-line no-unused-vars
-{ TodoAdapter } from './todo'
+{ TalentAdapter } from './talent'
 
 /**
  * @description dynamo repository for state machine
@@ -29,6 +29,6 @@ import todoAdapterFactory,
  */
 export const adapter = (escriba, repository) => {
   return {
-    todo: todoAdapterFactory(escriba, repository)
+    talent: talentAdapterFactory(escriba, repository)
   }
 }
