@@ -1,5 +1,7 @@
 # Talent Retainer Service
 
+![talento](./talento-avelas.png)
+
 [![Coverage Status](https://coveralls.io/repos/github/claytonsilva/talent-retainer-service/badge.svg?branch=master)](https://coveralls.io/github/claytonsilva/talent-retainer-service?branch=master)
 [![Mutation testing badge](https://img.shields.io/endpoint?style=flat&url=https%3A%2F%2Fbadge-api.stryker-mutator.io%2Fgithub.com%2Fclaytonsilva%2Ftalent-retainer-service%2Fmaster)](https://dashboard.stryker-mutator.io/reports/github.com/claytonsilva/talent-retainer-service/master)
 [![Standard - JavaScript Style Guide](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
