@@ -325,7 +325,7 @@ describe('validateUpdateTalent', () => {
     talentLastSalaryRange: 'INVALID'
   }
 
-  test('validate invalid talentLastSalaryRange on create', () => {
+  test('validate invalid talentLastSalaryRange on update', () => {
     const throwMessage = `invalid value for talentLastSalaryRange: got ${validateCaseSalaryRangeInvalid.talentLastSalaryRange}`
     expect(() => {
       validateUpdateTalent(validateCaseSalaryRangeInvalid, defaultOriginalData)
@@ -343,7 +343,7 @@ describe('validateUpdateTalent', () => {
     talentName: null
   }
 
-  test('validate null talentName on create', () => {
+  test('validate null talentName on update', () => {
     const throwMessage = 'invalid entry on field data, missing information about talentName'
     expect(() => {
       validateUpdateTalent(validateNullTalentName, defaultOriginalData)
@@ -361,7 +361,7 @@ describe('validateUpdateTalent', () => {
     talentSurname: null
   }
 
-  test('validate null talentSurname on create', () => {
+  test('validate null talentSurname on update', () => {
     const throwMessage = 'invalid entry on field data, missing information about talentSurname'
     expect(() => {
       validateUpdateTalent(validateNullTalentSurname, defaultOriginalData)
@@ -382,7 +382,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentHardSkillsTags: value
     }
-    test(`(invalid arrays) validate talentHardSkillsTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(invalid arrays) validate talentHardSkillsTags data content on update "${JSON.stringify(value)}"`, () => {
       const throwMessage = 'invalid value for talentHardSkillsTags'
       expect(() => {
         validateUpdateTalent(caseToValidateHardSkillsArrayTags, defaultOriginalData)
@@ -399,7 +399,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentSoftSkillsTags: value
     }
-    test(`(invalid arrays) validate talentSoftSkillsTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(invalid arrays) validate talentSoftSkillsTags data content on update "${JSON.stringify(value)}"`, () => {
       const throwMessage = 'invalid value for talentSoftSkillsTags'
       expect(() => {
         validateUpdateTalent(caseToValidateSoftSkillsArrayTags, defaultOriginalData)
@@ -416,7 +416,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentPositionTags: value
     }
-    test(`(invalid arrays) validate talentPositionTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(invalid arrays) validate talentPositionTags data content on update "${JSON.stringify(value)}"`, () => {
       const throwMessage = 'invalid value for talentPositionTags'
       expect(() => {
         validateUpdateTalent(caseToValidatePositionArrayTags, defaultOriginalData)
@@ -435,7 +435,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentHardSkillsTags: value
     }
-    test(`(valid arrays) validate talentHardSkillsTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(valid arrays) validate talentHardSkillsTags data content on update "${JSON.stringify(value)}"`, () => {
       expect(() => {
         validateUpdateTalent(caseToValidateHardSkillsArrayTags, defaultOriginalData)
       }).not.toThrow()
@@ -449,7 +449,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentSoftSkillsTags: value
     }
-    test(`(valid arrays) validate talentSoftSkillsTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(valid arrays) validate talentSoftSkillsTags data content on update "${JSON.stringify(value)}"`, () => {
       expect(() => {
         validateUpdateTalent(caseToValidateSoftSkillsArrayTags, defaultOriginalData)
       }).not.toThrow()
@@ -463,7 +463,7 @@ describe('validateUpdateTalent', () => {
       ...defaultOriginalData,
       talentPositionTags: value
     }
-    test(`(valid arrays) validate talentPositionTags data content on create "${JSON.stringify(value)}"`, () => {
+    test(`(valid arrays) validate talentPositionTags data content on update "${JSON.stringify(value)}"`, () => {
       expect(() => {
         validateUpdateTalent(caseToValidatePositionArrayTags, defaultOriginalData)
       }).not.toThrow()
@@ -485,7 +485,7 @@ describe('validateDeleteTalent', () => {
     talentStatus: ETalentStatus.OPEN
   })
 
-  test('validate null originalData on update', () => {
+  test('validate null originalData on delete', () => {
     const throwMessage = 'no data for this id'
     expect(() => {
       validateDeleteTalent(null)

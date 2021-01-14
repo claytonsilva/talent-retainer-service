@@ -9,6 +9,7 @@ import { Talent, MutateTalentInputCreate, MutateTalentInputUpdate } from './inde
 import { v4 as uuidv4 } from 'uuid'
 import { toISOString } from './moment'
 import { ETalentRangeSalary, ETalentStatus } from './constants'
+import { validateInnerArrayString } from './common'
 import R from 'ramda'
 import {
   EClassError,
@@ -152,19 +153,4 @@ export const validateDeleteTalent = (originalData) => {
   }
 
   return originalData
-}
-
-/**
-   * @description Validate if all objects in the array have same type of the argument
-   * @memberof business
-   * @function
-   * @param {Array} data array of the elements
-   * @returns {boolean}
-   */
-export const validateInnerArrayString = (data) => {
-  if (!Array.isArray(data)) {
-    return false
-  }
-
-  return R.not(data.some(tag => R.not(R.is(String, tag))))
 }
