@@ -16,7 +16,8 @@ import { Express } from 'express'
 /**
  * Code imports.
  */
-import { todoRouter } from './todo.router'
+import { openingRouter } from './opening.router'
+import { talentRouter } from './talent.router'
 
 /**
  * @description Get route definitions.
@@ -25,12 +26,13 @@ import { todoRouter } from './todo.router'
  * @function
  * @param {Logger} escriba instance of escriba
  * @param {AdapterInstance} adapter instantiated adapter
- * @param {Express} appp instantiated application express
+ * @param {Express} app instantiated application express
  * @returns {getRoutesReturn}
  */
 export const getRoutes = (escriba, adapter, app) => {
   // Route todos
-  app.use('/api/v1/todos', todoRouter(escriba, adapter))
+  app.use('/api/v1/openings', openingRouter(escriba, adapter))
+  app.use('/api/v1/talents', talentRouter(escriba, adapter))
 
   return app
 }
