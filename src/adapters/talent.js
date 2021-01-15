@@ -114,6 +114,7 @@ const updateTalent = (escriba, repository) => async (id, talentEconomicSegment, 
         talentHardSkillsTags = :talentHardSkillsTags,
         talentPositionTags = :talentPositionTags,
         talentStatus = :talentStatus,
+        lastUpdateDate = :lastUpdateDate,
         talentLastSalaryRange = :talentLastSalaryRange
     `
 

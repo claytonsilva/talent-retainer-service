@@ -26,8 +26,9 @@ AWSConfig.update(AWSDynamoConfig)
 const dynamo = new DynamoDB.DocumentClient()
 
 // inject repositories
-const databaseRepoInstance = databaseRepository(dynamo, appConfig.todo.tableName)
-const adapterInstance = adapter(escriba, databaseRepoInstance)
+const talentRepoInstance = databaseRepository(dynamo, appConfig.talent.tableName)
+const openingRepoInstance = databaseRepository(dynamo, appConfig.opening.tableName)
+const adapterInstance = adapter(escriba, talentRepoInstance, openingRepoInstance)
 
 _app.use(bodyParser.json({ limit: '50mb' }))
 _app.use(bodyParser.urlencoded({ extended: false }))

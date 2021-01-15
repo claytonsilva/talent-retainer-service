@@ -1,10 +1,17 @@
 # this file is for output members
 
-output "todo_queue_url" {
-  value = "${aws_sqs_queue.todo_queue.id}"
+output "talent_queue_url" {
+  value = "${aws_sqs_queue.talent.id}"
 }
 
+output "dynamo_talent_id" {
+  value = "${aws_dynamodb_table.talent.id}"
+}
 
-output "dynamo_todo_id" {
-  value = "${aws_dynamodb_table.todo_data.id}"
+output "opening_queue_url" {
+  value = "${aws_sqs_queue.opening.id}"
+}
+
+output "dynamo_opening_id" {
+  value = "${aws_dynamodb_table.opening.id}"
 }

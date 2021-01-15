@@ -80,9 +80,13 @@ const appConfig = {
   appName: getEnv('APP_NAME', 'talent-retainer-service'),
   isProduction: getEnv('NODE_ENV') === envProdName,
   envName: getEnv('NODE_ENV'),
-  todo: {
-    tableName: getEnv('AWS_DYNAMO_TODO_TABLE_NAME', 'todos'),
-    queueUrl: getEnv('AWS_SQS_TODO_QUEUE_NAME', 'todo')
+  talent: {
+    tableName: getEnv('AWS_DYNAMO_TALENT_TABLE_NAME', 'talent'),
+    queueUrl: getEnv('AWS_SQS_TALENT_QUEUE_URL', 'talent')
+  },
+  opening: {
+    tableName: getEnv('AWS_DYNAMO_OPENING_TABLE_NAME', 'opening'),
+    queueUrl: getEnv('AWS_SQS_OPENING_QUEUE_URL', 'opening')
   }
 }
 

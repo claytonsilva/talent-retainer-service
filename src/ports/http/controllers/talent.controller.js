@@ -97,7 +97,7 @@ export const deleteTalent = (escriba, adapter) => async (req, _res, _next) => {
      * disclaimer : the user in production environment,
      * user will be sent by the midlleware authentication who call the method on http
      */
-    const todo = await adapter.todo.deleteTalent(req.params.id, req.params.talentEconomicSegment)
+    const todo = await adapter.talent.deleteTalent(req.params.id, req.params.talentEconomicSegment)
     return todo
   } catch (error) {
     escriba.error('api.controller.todo.deleteTalent', error)

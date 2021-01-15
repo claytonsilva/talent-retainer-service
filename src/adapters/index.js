@@ -29,12 +29,13 @@ import openingAdapterFactory,
  * @memberof ports/state-machines
  * @function
  * @param {Logger} escriba - Instance of escriba.
- * @param {DynamoRepositoryInstance} repository repository instatiated
+ * @param {DynamoRepositoryInstance} talentRepository repository instatiated for talent
+ * @param {DynamoRepositoryInstance} openingRepository repository instatiated for talent
  * @returns {Adapter}
  */
-export const adapter = (escriba, repository) => {
+export const adapter = (escriba, talentRepository, openingRepository) => {
   return {
-    talent: talentAdapterFactory(escriba, repository),
-    opening: openingAdapterFactory(escriba, repository)
+    talent: talentAdapterFactory(escriba, talentRepository),
+    opening: openingAdapterFactory(escriba, openingRepository)
   }
 }

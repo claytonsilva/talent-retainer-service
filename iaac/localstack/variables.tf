@@ -5,7 +5,7 @@ variable "region" {
 variable "project_name" {
   type = "string"
 
-  default = "hexagonal_boilerplate"
+  default = "talent-retainer-service"
 }
 
 variable "runtime" {
@@ -28,4 +28,3 @@ variable "environment" {
 
   default = "development"
 }
-

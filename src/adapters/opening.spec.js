@@ -187,6 +187,7 @@ describe('updateOpening', () => {
         openingHardSkillsTags = :openingHardSkillsTags,
         openingPositionTags = :openingPositionTags,
         openingStatus = :openingStatus,
+        lastUpdateDate = :lastUpdateDate,
         openingRangeSalary = :openingRangeSalary
     `
     expect(updateDocument).toHaveBeenCalled()
