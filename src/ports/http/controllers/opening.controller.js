@@ -7,39 +7,39 @@ import { Todo } from '../../../business'
 // eslint-disable-next-line no-unused-vars
 import { Adapter } from '../../../adapters'
 // eslint-disable-next-line no-unused-vars
-import { ControllerTodoReturn } from './index'
+import { ControllerOpeningReturn } from './index'
 
 /**
- * @description Get Task by id
+ * @description Get Opening by id
  *
  * @memberof ports/http/controllers
  * @param {Logger} escriba instance of escriba
  * @param {Adapter} adapter adapter instantiated
- * @returns {ControllerTodoReturn}
+ * @returns {ControllerOpeningReturn}
  */
-export const getTodo = (escriba, adapter) => async (req, _res, _next) => {
+export const getOpening = (escriba, adapter) => async (req, _res, _next) => {
   try {
     /**
      * disclaimer : the user in production environment,
      * user will be sent by the midlleware authentication who call the method on http
      */
-    const todo = await adapter.todo.getTodo(req.params.id)
-    return todo
+    const opening = await adapter.opening.getOpening(req.params.id, req.params.openingEconomicSegment)
+    return opening
   } catch (error) {
-    escriba.error('api.controller.todo.getTodo', error)
+    escriba.error('api.controller.opening.getOpening', error)
     throw error
   }
 }
 
 /**
- * @description Create Task
+ * @description Create Opening
  *
  * @memberof ports/http/controllers
  * @param {Logger} escriba instance of escriba
  * @param {Adapter} adapter adapter instantiated
- * @returns {ControllerTodoReturn}
+ * @returns {ControllerOpeningReturn}
  */
-export const createTodo = (escriba, adapter) => async (req, _res, _next) => {
+export const createOpening = (escriba, adapter) => async (req, _res, _next) => {
   try {
     /**
      * TODO validate body
@@ -49,23 +49,23 @@ export const createTodo = (escriba, adapter) => async (req, _res, _next) => {
      * disclaimer : the user in production environment,
      * user will be sent by the midlleware authentication who call the method on http
      */
-    const todo = await adapter.todo.createTodo(req.body.data, req.body.user)
-    return todo
+    const opening = await adapter.opening.createOpening(req.body.data)
+    return opening
   } catch (error) {
-    escriba.error('api.controller.todo.createTodo', error)
+    escriba.error('api.controller.opening.createOpening', error)
     throw error
   }
 }
 
 /**
- * @description Update Task
+ * @description Update Opening
  *
  * @memberof ports/http/controllers
  * @param {Logger} escriba instance of escriba
  * @param {Adapter} adapter adapter instantiated
- * @returns {ControllerTodoReturn}
+ * @returns {ControllerOpeningReturn}
  */
-export const updateTodo = (escriba, adapter) => async (req, _res, _next) => {
+export const updateOpening = (escriba, adapter) => async (req, _res, _next) => {
   try {
     /**
      * TODO validate body
@@ -75,32 +75,32 @@ export const updateTodo = (escriba, adapter) => async (req, _res, _next) => {
      * disclaimer : the user in production environment,
      * user will be sent by the midlleware authentication who call the method on http
      */
-    const todo = await adapter.todo.updateTodo(req.params.id, req.body.data, req.body.user)
-    return todo
+    const opening = await adapter.opening.updateOpening(req.params.id, req.params.openingEconomicSegment, req.body.data)
+    return opening
   } catch (error) {
-    escriba.error('api.controller.todo.updateTodo', error)
+    escriba.error('api.controller.opening.updateOpening', error)
     throw error
   }
 }
 
 /**
- * @description Delete Task
+ * @description Delete Opening
  *
  * @memberof ports/http/controllers
  * @param {Logger} escriba instance of escriba
  * @param {Adapter} adapter adapter instantiated
- * @returns {controllerTodoReturn}
+ * @returns {ControllerOpeningReturn}
  */
-export const deleteTodo = (escriba, adapter) => async (req, _res, _next) => {
+export const deleteOpening = (escriba, adapter) => async (req, _res, _next) => {
   try {
     /**
      * disclaimer : the user in production environment,
      * user will be sent by the midlleware authentication who call the method on http
      */
-    const todo = await adapter.todo.deleteTodo(req.params.id, req.body.user)
-    return todo
+    const opening = await adapter.opening.deleteOpening(req.params.id, req.params.openingEconomicSegment)
+    return opening
   } catch (error) {
-    escriba.error('api.controller.todo.deleteTodo', error)
+    escriba.error('api.controller.opening.deleteOpening', error)
     throw error
   }
 }

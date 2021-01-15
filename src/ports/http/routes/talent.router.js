@@ -11,12 +11,12 @@ import { Adapter } from '../../../adapters/index'
  */
 import { Router } from 'express'
 import { response } from './utils'
-import { createTodo, deleteTodo, getTodo, updateTodo } from '../controllers/todo.controller'
+import { getTalent, createTalent, updateTalent, deleteTalent } from '../controllers/talent.controller'
 
 const router = Router()
 
 /**
- * @description Define the todo routes.
+ * @description Define the talent routes.
  *
  * @memberof ports/http/routes
  * @function
@@ -25,26 +25,26 @@ const router = Router()
  * @returns {Router}
  */
 
-export const todoRouter = (escriba, adapter) => {
+export const talentRouter = (escriba, adapter) => {
   /**
    * get task with existing id
    */
-  router.get('/:id', (req, res, next) => response(getTodo(escriba, adapter)(req, res, next), res, next))
+  router.get('/:id', (req, res, next) => response(getTalent(escriba, adapter)(req, res, next), res, next))
 
   /**
    * create task with existing id
    */
-  router.post('/', (req, res, next) => response(createTodo(escriba, adapter)(req, res, next), res, next))
+  router.post('/', (req, res, next) => response(createTalent(escriba, adapter)(req, res, next), res, next))
 
   /**
    * update task with existing id
    */
-  router.put('/:id', (req, res, next) => response(updateTodo(escriba, adapter)(req, res, next), res, next))
+  router.put('/:id', (req, res, next) => response(updateTalent(escriba, adapter)(req, res, next), res, next))
 
   /**
    * delete task with existing id
    */
-  router.delete('/:id', (req, res, next) => response(deleteTodo(escriba, adapter)(req, res, next), res, next))
+  router.delete('/:id', (req, res, next) => response(deleteTalent(escriba, adapter)(req, res, next), res, next))
 
   return router
 }
