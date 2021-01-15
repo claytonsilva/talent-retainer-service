@@ -9,6 +9,7 @@
 /**
  * @typedef {Object} Adapter
  * @property {TalentAdapter} talent talent adapter instantied
+ * @property {OpeningAdapter} opening talent adapter instantied
  */
 
 // eslint-disable-next-line no-unused-vars
@@ -17,6 +18,10 @@ import { DynamoRepositoryInstance } from '../ports/state-machines'
 import talentAdapterFactory,
 // eslint-disable-next-line no-unused-vars
 { TalentAdapter } from './talent'
+
+import openingAdapterFactory,
+// eslint-disable-next-line no-unused-vars
+{ OpeningAdapter } from './opening'
 
 /**
  * @description dynamo repository for state machine
@@ -29,6 +34,7 @@ import talentAdapterFactory,
  */
 export const adapter = (escriba, repository) => {
   return {
-    talent: talentAdapterFactory(escriba, repository)
+    talent: talentAdapterFactory(escriba, repository),
+    opening: openingAdapterFactory(escriba, repository)
   }
 }
