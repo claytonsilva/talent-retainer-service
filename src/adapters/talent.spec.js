@@ -187,6 +187,7 @@ describe('updateTalent', () => {
         talentHardSkillsTags = :talentHardSkillsTags,
         talentPositionTags = :talentPositionTags,
         talentStatus = :talentStatus,
+        lastUpdateDate = :lastUpdateDate,
         talentLastSalaryRange = :talentLastSalaryRange
     `
     expect(updateDocument).toHaveBeenCalled()

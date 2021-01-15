@@ -114,6 +114,7 @@ const updateOpening = (escriba, repository) => async (id, openingEconomicSegment
         openingHardSkillsTags = :openingHardSkillsTags,
         openingPositionTags = :openingPositionTags,
         openingStatus = :openingStatus,
+        lastUpdateDate = :lastUpdateDate,
         openingRangeSalary = :openingRangeSalary
     `
 
