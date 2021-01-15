@@ -1,8 +1,14 @@
-resource "aws_dynamodb_table" "todo_data" {
-  name           = "${local.dynamodb_table_name_todo}"
+resource "aws_dynamodb_table" "talent" {
+  name           = "${local.dynamodb_table_name_talent}"
   read_capacity  = 5
   write_capacity = 1
-  hash_key       = "id"
+  hash_key       = "talentEconomicSegment"
+  range_key      = "id"
+
+  attribute {
+    name = "talentEconomicSegment"
+    type = "S"
+  }
 
   attribute {
     name = "id"
@@ -10,10 +16,64 @@ resource "aws_dynamodb_table" "todo_data" {
   }
 }
 
-resource "aws_sqs_queue" "todo_queue" {
-  name                      = "todo-queue"
-  delay_seconds             = 90
-  max_message_size          = 8192
-  message_retention_seconds = 3600
-  receive_wait_time_seconds = 10
+resource "aws_sqs_queue" "talent" {
+  name                       = "${local.talent_queue_name}"
+  max_message_size           = 8192
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 10
+  visibility_timeout_seconds = "${local.talent_queue_visibility_timeout}"
+
+  redrive_policy = "${data.template_file.queue_retry_policy_talent.rendered}"
+
+  lifecycle {
+    ignore_changes = ["redrive_policy"]
+  }
+}
+
+resource "aws_sqs_queue" "talent_dlq" {
+  name                       = "${local.talent_dlq_queue_name}"
+  max_message_size           = 8192
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 10
+  visibility_timeout_seconds = "${local.talent_queue_visibility_timeout}"
+}
+
+resource "aws_dynamodb_table" "opening" {
+  name           = "${local.dynamodb_table_name_opening}"
+  read_capacity  = 5
+  write_capacity = 1
+  hash_key       = "openingEconomicSegment"
+  range_key      = "id"
+
+  attribute {
+    name = "openingEconomicSegment"
+    type = "S"
+  }
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+}
+
+resource "aws_sqs_queue" "opening" {
+  name                       = "${local.opening_queue_name}"
+  max_message_size           = 8192
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 10
+  visibility_timeout_seconds = "${local.opening_queue_visibility_timeout}"
+
+  redrive_policy = "${data.template_file.queue_retry_policy_opening.rendered}"
+
+  lifecycle {
+    ignore_changes = ["redrive_policy"]
+  }
+}
+
+resource "aws_sqs_queue" "opening_dlq" {
+  name                       = "${local.opening_dlq_queue_name}"
+  max_message_size           = 8192
+  message_retention_seconds  = 345600
+  receive_wait_time_seconds  = 10
+  visibility_timeout_seconds = "${local.opening_queue_visibility_timeout}"
 }

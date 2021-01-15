@@ -22,7 +22,7 @@ services:
     links:
       - localstack
   localstack:
-    image: localstack/localstack:0.11.2
+    image: localstack/localstack:0.12.5
     container_name: "localstack_${PROJECT_NAME:-local_project}"
     networks:
       - inner
