@@ -29,7 +29,7 @@ export const talentRouter = (escriba, adapter) => {
   /**
    * get task with existing id
    */
-  router.get('/:id', (req, res, next) => response(getTalent(escriba, adapter)(req, res, next), res, next))
+  router.get('/:talentEconomicSegment/:id', (req, res, next) => response(getTalent(escriba, adapter)(req, res, next), res, next))
 
   /**
    * create task with existing id
@@ -39,12 +39,12 @@ export const talentRouter = (escriba, adapter) => {
   /**
    * update task with existing id
    */
-  router.put('/:id', (req, res, next) => response(updateTalent(escriba, adapter)(req, res, next), res, next))
+  router.put('/:talentEconomicSegment/:id', (req, res, next) => response(updateTalent(escriba, adapter)(req, res, next), res, next))
 
   /**
    * delete task with existing id
    */
-  router.delete('/:id', (req, res, next) => response(deleteTalent(escriba, adapter)(req, res, next), res, next))
+  router.delete('/:talentEconomicSegment/:id', (req, res, next) => response(deleteTalent(escriba, adapter)(req, res, next), res, next))
 
   return router
 }
