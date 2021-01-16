@@ -35,3 +35,16 @@ export const EOpeningStatus = {
   SUSPENDED: 'SUSPENDED', // temporary suspended
   CLOSED: 'CLOSED' // the job position was filled or job position was canceled
 }
+
+/**
+ * Enum for EOperation values.
+ * @readonly
+ * @memberof business
+ * @enum {string}
+ */
+export const EOperation = {
+  CREATE: 'CREATE', // create data in dynamo database
+  UPDATE: 'UPDATE', // update data in dynamo database
+  DELETE: 'DELETE', // delete data in dynamo database
+  MATCH: 'MATCH' // match between talents and openings
+}

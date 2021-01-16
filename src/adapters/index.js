@@ -13,7 +13,7 @@
  */
 
 // eslint-disable-next-line no-unused-vars
-import { DynamoRepositoryInstance } from '../ports/state-machines'
+import { DynamoRepositoryInstance, QueueRepositoryInstance } from '../ports/state-machines'
 // code imports
 import talentAdapterFactory,
 // eslint-disable-next-line no-unused-vars
@@ -29,13 +29,15 @@ import openingAdapterFactory,
  * @memberof ports/state-machines
  * @function
  * @param {Logger} escriba - Instance of escriba.
- * @param {DynamoRepositoryInstance} talentRepository repository instatiated for talent
- * @param {DynamoRepositoryInstance} openingRepository repository instatiated for talent
+ * @param {DynamoRepositoryInstance} talentRepository repository instatiated for talent table
+ * @param {QueueRepositoryInstance} queueTalentRepository repository instatiated for talent queue
+ * @param {DynamoRepositoryInstance} openingRepository repository instatiated for opening table
+ * @param {QueueRepositoryInstance} queueOpeningRepository repository instatiated for opening table queue
  * @returns {Adapter}
  */
-export const adapter = (escriba, talentRepository, openingRepository) => {
+export const adapter = (escriba, talentRepository, queueTalentRepository, openingRepository, queueOpeningRepository) => {
   return {
-    talent: talentAdapterFactory(escriba, talentRepository),
-    opening: openingAdapterFactory(escriba, openingRepository)
+    talent: talentAdapterFactory(escriba, talentRepository, queueOpeningRepository),
+    opening: openingAdapterFactory(escriba, openingRepository, queueOpeningRepository)
   }
 }

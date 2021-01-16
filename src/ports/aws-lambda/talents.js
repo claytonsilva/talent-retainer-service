@@ -1,10 +1,10 @@
 
-import AWS from 'aws-sdk'
+import { config as AWSConfigInstance, DynamoDB, SQS } from 'aws-sdk'
 
-import { appConfig, AWSDynamoConfig } from '../../config'
+import { appConfig, AWSDynamoConfig, AWSSqsConfig, AWSConfig } from '../../config'
 import { adapter } from '../../adapters'
 import { handleLogger } from '../logger/logger'
-import { databaseRepository } from '../state-machines'
+import { databaseRepository, queueRepository } from '../state-machines'
 import { getSafeBody, parseAPIGWResponse } from './common'
 
 /**
@@ -23,14 +23,20 @@ export const handler = async (event, context) => {
   // Escriba configuration.
   const escriba = handleLogger(appName, envName)
 
-  // AWS Dynamo configuration.
-  AWS.config.update(AWSDynamoConfig)
-  const dynamo = new AWS.DynamoDB.DocumentClient()
+  // AWS configuration.
+  AWSConfigInstance.update(AWSConfig)
+  // AWS Dynamo configuration
+  const dynamo = new DynamoDB.DocumentClient(AWSDynamoConfig)
+  // AWS SQS configuration
+  const sqs = new SQS(AWSSqsConfig)
 
   // inject repositories
   const talentRepoInstance = databaseRepository(dynamo, appConfig.talent.tableName)
   const openingRepoInstance = databaseRepository(dynamo, appConfig.opening.tableName)
-  const adapterInstance = adapter(escriba, talentRepoInstance, openingRepoInstance)
+  const talentQueueRepoInstance = queueRepository(sqs, appConfig.talent.queueUrl)
+  const openingQueueRepoInstance = queueRepository(sqs, appConfig.opening.queueUrl)
+
+  const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, openingRepoInstance, openingQueueRepoInstance)
 
   const getTalent = async () => {
     try {

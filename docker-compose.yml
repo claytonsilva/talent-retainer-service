@@ -31,8 +31,6 @@ services:
       - HOST_TMP_FOLDER=${PWD}
       - LAMBDA_DOCKER_NETWORK=${PROJECT_NAME}
       - AWS_REGION=${AWS_REGION}
-      - AWS_ACCESS_KEY_ID='xxxx'
-      - AWS_ACCESS_SECRET_KEY='xxxx'
       - LAMBDA_REMOTE_DOCKER=${LAMBDA_REMOTE_DOCKER-0}
     volumes:
       - ${PWD}/.localstack/tmp/localstack:/tmp/localstack

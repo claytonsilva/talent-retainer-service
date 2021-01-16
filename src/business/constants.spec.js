@@ -1,4 +1,4 @@
-import { ETalentRangeSalary, ETalentStatus, EOpeningStatus } from './constants'
+import { ETalentRangeSalary, ETalentStatus, EOpeningStatus, EOperation } from './constants'
 
 describe('constants', () => {
   test('ETalentStatus', () => {
@@ -17,5 +17,12 @@ describe('constants', () => {
     expect(ETalentRangeSalary.BETWEEN5KAND10K).toBe('BETWEEN5KAND10K')
     expect(ETalentRangeSalary.HIGHER15K).toBe('HIGHER15K')
     expect(ETalentRangeSalary.LOWER5K).toBe('LOWER5K')
+  })
+
+  test('EOperation', () => {
+    expect(EOperation.CREATE).toBe('CREATE')
+    expect(EOperation.UPDATE).toBe('UPDATE')
+    expect(EOperation.DELETE).toBe('DELETE')
+    expect(EOperation.MATCH).toBe('MATCH')
   })
 })
