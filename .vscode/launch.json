@@ -11,12 +11,14 @@
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
             ],
+            "envFile": "${workspaceFolder}/.env",
             "program": "${workspaceFolder}/dist/ports/http/bin/www.js"
         },
         {
             "type": "pwa-node",
             "request": "launch",
             "name": "Jest Test",
+            "envFile": "${workspaceFolder}/.env",
             "program": "${workspaceFolder}/node_modules/.bin/jest",
             "args": [
                 "--runInBand",
@@ -29,6 +31,7 @@
             "type": "pwa-node",
             "request": "launch",
             "name": "run on lambda port",
+            "envFile": "${workspaceFolder}/.env",
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"
             ],
