@@ -5,7 +5,7 @@
 // eslint-disable-next-line no-unused-vars
 import { Logger } from 'log4js'
 // eslint-disable-next-line no-unused-vars
-import { DynamoRepositoryInstance } from '../ports/state-machines'
+import { DynamoRepositoryInstance, QueueRepositoryInstance } from '../ports/state-machines'
 // eslint-disable-next-line no-unused-vars
 import { MutateOpeningInputCreate, MutateOpeningInputUpdate, Opening, OpeningKey } from '../business'
 
@@ -21,6 +21,8 @@ import {
 } from '../utils'
 
 import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening } from '../business/opening'
+import { EOperation } from '../business/constants'
+import { sendPayloadtoQueue } from './common'
 
 /**
  * @description Talent adapter factory
@@ -28,13 +30,14 @@ import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening } f
  * @function
  * @param {Logger} escriba instance of escriba logger
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {OpeningAdapter} Talent adapter instantied
  */
-const openingAdapterFactory = (escriba, repository) => ({
+const openingAdapterFactory = (escriba, repository, queueRepository) => ({
   getOpening: getOpening(repository),
-  createOpening: createOpening(escriba, repository),
-  updateOpening: updateOpening(escriba, repository),
-  deleteOpening: deleteOpening(escriba, repository)
+  createOpening: createOpening(escriba, repository, queueRepository),
+  updateOpening: updateOpening(escriba, repository, queueRepository),
+  deleteOpening: deleteOpening(escriba, repository, queueRepository)
 })
 
 export default openingAdapterFactory
@@ -65,9 +68,10 @@ const getOpening = (repository) => async (id, openingEconomicSegment) => {
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {createOpeningReturn} function to call createOpening direct
  */
-const createOpening = (escriba, repository) => async (params) => {
+const createOpening = (escriba, repository, queueRepository) => async (params) => {
   const methodPath = 'adapters.opening.createOpening'
   try {
     const documentInserted = await repository
@@ -83,6 +87,15 @@ const createOpening = (escriba, repository) => async (params) => {
       data: { documentInserted }
     })
 
+    /***
+     * important: cannot block main flow of the data
+     */
+    try {
+      await sendPayloadtoQueue(escriba, queueRepository)(documentInserted, 'Opening', EOperation.MATCH)
+    } catch (error) {
+      escriba.error(methodPath, { ...error })
+    }
+
     return documentInserted
   } catch (error) {
     throwCustomError(error, methodPath, EClassError.INTERNAL)
@@ -97,9 +110,10 @@ const createOpening = (escriba, repository) => async (params) => {
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {updateOpeningReturn} function to call updateOpening direct
  */
-const updateOpening = (escriba, repository) => async (id, openingEconomicSegment, params) => {
+const updateOpening = (escriba, repository, queueRepository) => async (id, openingEconomicSegment, params) => {
   const methodPath = 'adapters.opening.updateOpening'
   try {
     const currObject = await getOpening(repository)(id, openingEconomicSegment)
@@ -119,7 +133,7 @@ const updateOpening = (escriba, repository) => async (id, openingEconomicSegment
     `
 
     // send report to existing Talent previous created
-    const task = await repository.updateDocument(
+    const documentUpdated = await repository.updateDocument(
       { id, openingEconomicSegment },
       UpdateExpression,
       ExpressionAttributeValues
@@ -129,11 +143,20 @@ const updateOpening = (escriba, repository) => async (id, openingEconomicSegment
     escriba.info({
       action: 'OPENING_UPDATED',
       method: methodPath,
-      data: task
+      data: documentUpdated
     })
 
+    /***
+     * important: cannot block main flow of the data
+     */
+    try {
+      await sendPayloadtoQueue(escriba, queueRepository)(documentUpdated, 'Opening', EOperation.MATCH)
+    } catch (error) {
+      escriba.error(methodPath, { ...error })
+    }
+
     // return updated item
-    return task
+    return documentUpdated
   } catch (error) {
     throwCustomError(error, methodPath, EClassError.INTERNAL)
   }
@@ -147,9 +170,10 @@ const updateOpening = (escriba, repository) => async (id, openingEconomicSegment
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {deleteOpeningReturn} function to call deleteOpening direct
  */
-const deleteOpening = (escriba, repository) => async (id, openingEconomicSegment) => {
+const deleteOpening = (escriba, repository, queueRepository) => async (id, openingEconomicSegment) => {
   const methodPath = 'adapters.opening.deleteOpening'
   try {
     const currObject = validateDeleteOpening(await getOpening(repository)(id, openingEconomicSegment))

@@ -5,7 +5,7 @@
 // eslint-disable-next-line no-unused-vars
 import { Logger } from 'log4js'
 // eslint-disable-next-line no-unused-vars
-import { DynamoRepositoryInstance } from '../ports/state-machines'
+import { DynamoRepositoryInstance, QueueRepositoryInstance } from '../ports/state-machines'
 // eslint-disable-next-line no-unused-vars
 import { MutateTalentInputCreate, MutateTalentInputUpdate, Talent, TalentKey } from '../business'
 
@@ -21,6 +21,8 @@ import {
 } from '../utils'
 
 import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent } from '../business/talent'
+import { EOperation } from '../business/constants'
+import { sendPayloadtoQueue } from './common'
 
 /**
  * @description Talent adapter factory
@@ -28,13 +30,14 @@ import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent } from
  * @function
  * @param {Logger} escriba instance of escriba logger
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {TalentAdapter} Talent adapter instantied
  */
-const talentAdapterFactory = (escriba, repository) => ({
+const talentAdapterFactory = (escriba, repository, queueRepository) => ({
   getTalent: getTalent(repository),
-  createTalent: createTalent(escriba, repository),
-  updateTalent: updateTalent(escriba, repository),
-  deleteTalent: deleteTalent(escriba, repository)
+  createTalent: createTalent(escriba, repository, queueRepository),
+  updateTalent: updateTalent(escriba, repository, queueRepository),
+  deleteTalent: deleteTalent(escriba, repository, queueRepository)
 })
 
 export default talentAdapterFactory
@@ -65,9 +68,10 @@ const getTalent = (repository) => async (id, talentEconomicSegment) => {
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {createTalentReturn} function to call createTalent direct
  */
-const createTalent = (escriba, repository) => async (params) => {
+const createTalent = (escriba, repository, queueRepository) => async (params) => {
   const methodPath = 'adapters.talent.createTalent'
   try {
     const documentInserted = await repository
@@ -83,6 +87,15 @@ const createTalent = (escriba, repository) => async (params) => {
       data: { documentInserted }
     })
 
+    /***
+     * important: cannot block main flow of the data
+     */
+    try {
+      await sendPayloadtoQueue(escriba, queueRepository)(documentInserted, 'talent', EOperation.MATCH)
+    } catch (error) {
+      escriba.error(methodPath, { ...error })
+    }
+
     return documentInserted
   } catch (error) {
     throwCustomError(error, methodPath, EClassError.INTERNAL)
@@ -97,9 +110,10 @@ const createTalent = (escriba, repository) => async (params) => {
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
  * @returns {updateTalentReturn} function to call updateTalent direct
  */
-const updateTalent = (escriba, repository) => async (id, talentEconomicSegment, params) => {
+const updateTalent = (escriba, repository, queueRepository) => async (id, talentEconomicSegment, params) => {
   const methodPath = 'adapters.talent.updateTalent'
   try {
     const currObject = await getTalent(repository)(id, talentEconomicSegment)
@@ -119,7 +133,7 @@ const updateTalent = (escriba, repository) => async (id, talentEconomicSegment, 
     `
 
     // send report to existing Talent previous created
-    const task = await repository.updateDocument(
+    const documentUpdated = await repository.updateDocument(
       { id, talentEconomicSegment },
       UpdateExpression,
       ExpressionAttributeValues
@@ -129,11 +143,20 @@ const updateTalent = (escriba, repository) => async (id, talentEconomicSegment, 
     escriba.info({
       action: 'TALENT_UPDATED',
       method: methodPath,
-      data: task
+      data: documentUpdated
     })
 
+    /***
+     * important: cannot block main flow of the data
+     */
+    try {
+      await sendPayloadtoQueue(escriba, queueRepository)(documentUpdated, 'talent', EOperation.MATCH)
+    } catch (error) {
+      escriba.error(methodPath, { ...error })
+    }
+
     // return updated item
-    return task
+    return documentUpdated
   } catch (error) {
     throwCustomError(error, methodPath, EClassError.INTERNAL)
   }
