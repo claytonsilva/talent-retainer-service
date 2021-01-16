@@ -9,10 +9,8 @@
 import { Configuration as Log4jsConf } from 'log4js'
 
 // code imports
-import { config } from 'dotenv'
 import R from 'ramda'
 import { getEnv } from './environments'
-config()
 
 /**
  * general aws configuration

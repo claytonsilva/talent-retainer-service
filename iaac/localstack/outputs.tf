@@ -15,3 +15,7 @@ output "opening_queue_url" {
 output "dynamo_opening_id" {
   value = "${aws_dynamodb_table.opening.id}"
 }
+
+output "services_api_id" {
+  value = "${aws_api_gateway_rest_api.main.id}"
+}
