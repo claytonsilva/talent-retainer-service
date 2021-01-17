@@ -1,3 +1,12 @@
+import {
+  EClassError,
+  throwCustomError,
+  // eslint-disable-next-line no-unused-vars
+  CustomError
+} from '../utils'
+
+import { not, isNil } from 'ramda'
+
 /**
  * Enum for ETalentStatus values.
  * @readonly
@@ -47,4 +56,32 @@ export const EOperation = {
   UPDATE: 'UPDATE', // update data in dynamo database
   DELETE: 'DELETE', // delete data in dynamo database
   MATCH: 'MATCH' // match between talents and openings
+}
+
+/**
+ * Enum for EPersistOperation values.
+ * @readonly
+ * @memberof business
+ * @enum {string}
+ */
+export const EPersistOperation = {
+  ONLY_VALIDATE: 'ONLY_VALIDATE', // only run validation and send to message queue to process in background
+  ALL: 'ALL' // (default) validate and persist
+}
+
+/**
+ * @description Validate if config from microservice use correct value
+ * @memberof business
+ * @function
+ * @throws {CustomError}
+ * @param {EPersistOperation} value value for validate
+ * @returns {EPersistOperation}
+ */
+export const validatePersistOperation = (value) => {
+  const methodPath = 'business.constants.validatePersistOperation'
+  if ((not(isNil(value)) && not(Object.values(EPersistOperation).includes(value)))) {
+    throwCustomError(new Error(`invalid value for EPersistOperation (type): got ${value}`), methodPath, EClassError.USER_ERROR)
+  }
+
+  return value
 }

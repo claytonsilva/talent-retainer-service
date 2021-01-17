@@ -77,6 +77,7 @@ const envProdName = 'production'
 const appConfig = {
   appName: getEnv('APP_NAME', 'talent-retainer-service'),
   isProduction: getEnv('NODE_ENV') === envProdName,
+  persistOperation: getEnv('WRITE_OPERATION_LEVEL', 'ALL'),
   envName: getEnv('NODE_ENV'),
   talent: {
     tableName: getEnv('AWS_DYNAMO_TALENT_TABLE_NAME', 'talent'),

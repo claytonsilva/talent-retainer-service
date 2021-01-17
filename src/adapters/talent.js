@@ -21,7 +21,7 @@ import {
 } from '../utils'
 
 import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent } from '../business/talent'
-import { EOperation } from '../business/constants'
+import { EOperation, EPersistOperation, validatePersistOperation } from '../business/constants'
 import { sendPayloadtoQueue } from './common'
 
 /**
@@ -31,14 +31,38 @@ import { sendPayloadtoQueue } from './common'
  * @param {Logger} escriba instance of escriba logger
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {TalentAdapter} Talent adapter instantied
  */
-const talentAdapterFactory = (escriba, repository, queueRepository) => ({
-  getTalent: getTalent(repository),
-  createTalent: createTalent(escriba, repository, queueRepository),
-  updateTalent: updateTalent(escriba, repository, queueRepository),
-  deleteTalent: deleteTalent(escriba, repository, queueRepository)
-})
+const talentAdapterFactory = (escriba, repository, queueRepository, persistOperation = EPersistOperation.ALL) => {
+  const methodPath = 'adapters.talent.talentAdapterFactory'
+  try {
+    validatePersistOperation(persistOperation)
+  } catch (error) {
+    escriba.error(methodPath, { ...error })
+
+    /**
+     * if cannot recognize option, the system operate in fallback option
+     */
+    escriba.info(`system operating in default persistence level: ${EPersistOperation.ALL}`)
+
+    return {
+      getTalent: getTalent(repository, EPersistOperation.ALL),
+      createTalent: createTalent(escriba, repository, queueRepository, EPersistOperation.ALL),
+      updateTalent: updateTalent(escriba, repository, queueRepository, EPersistOperation.ALL),
+      deleteTalent: deleteTalent(escriba, repository, queueRepository, EPersistOperation.ALL)
+    }
+  }
+
+  escriba.info(`system operating in persistence level: ${persistOperation}`)
+
+  return {
+    getTalent: getTalent(repository, persistOperation),
+    createTalent: createTalent(escriba, repository, queueRepository, persistOperation),
+    updateTalent: updateTalent(escriba, repository, queueRepository, persistOperation),
+    deleteTalent: deleteTalent(escriba, repository, queueRepository, persistOperation)
+  }
+}
 
 export default talentAdapterFactory
 
@@ -69,16 +93,23 @@ const getTalent = (repository) => async (id, talentEconomicSegment) => {
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {createTalentReturn} function to call createTalent direct
  */
-const createTalent = (escriba, repository, queueRepository) => async (params) => {
+const createTalent = (escriba, repository, queueRepository, persistOperation) => async (params) => {
   const methodPath = 'adapters.talent.createTalent'
   try {
+    const documentValidated = validateCreateTalent(params)
+
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'talent', EOperation.CREATE)
+      return documentValidated
+    }
+
     const documentInserted = await repository
       .putDocument(
-        validateCreateTalent(
-          params
-        )
+        documentValidated
       )
 
     escriba.info({
@@ -111,14 +142,20 @@ const createTalent = (escriba, repository, queueRepository) => async (params) =>
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {updateTalentReturn} function to call updateTalent direct
  */
-const updateTalent = (escriba, repository, queueRepository) => async (id, talentEconomicSegment, params) => {
+const updateTalent = (escriba, repository, queueRepository, persistOperation) => async (id, talentEconomicSegment, params) => {
   const methodPath = 'adapters.talent.updateTalent'
   try {
     const currObject = await getTalent(repository)(id, talentEconomicSegment)
+    const documentValidated = validateUpdateTalent(params, currObject)
 
-    const ExpressionAttributeValues = validateUpdateTalent(params, currObject)
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'talent', EOperation.UPDATE)
+      return documentValidated
+    }
 
     const UpdateExpression = `
     set talentName = :talentName,
@@ -136,7 +173,7 @@ const updateTalent = (escriba, repository, queueRepository) => async (id, talent
     const documentUpdated = await repository.updateDocument(
       { id, talentEconomicSegment },
       UpdateExpression,
-      ExpressionAttributeValues
+      documentValidated
     )
 
     // log report data
@@ -170,12 +207,21 @@ const updateTalent = (escriba, repository, queueRepository) => async (id, talent
  * @throws {CustomError}
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {deleteTalentReturn} function to call deleteTalent direct
  */
-const deleteTalent = (escriba, repository) => async (id, talentEconomicSegment) => {
+const deleteTalent = (escriba, repository, queueRepository, persistOperation) => async (id, talentEconomicSegment) => {
   const methodPath = 'adapters.talent.deleteTalent'
   try {
     const currObject = validateDeleteTalent(await getTalent(repository)(id, talentEconomicSegment))
+
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(currObject, 'talent', EOperation.DELETE)
+      return currObject
+    }
+
     await repository.deleteDocument({ id, talentEconomicSegment })
 
     // log report data
@@ -208,7 +254,7 @@ const deleteTalent = (escriba, repository) => async (id, talentEconomicSegment) 
  * This callback is displayed as part of the createTalent function.
  * @memberof adapters
  * @callback createTalentReturn
- * @param {MutateTalentInputCreate} params input param for createTalent
+ * @param {MutateTalentInputCreate | Talent} params input param for createTalent
  * @returns {Promise<Talent>} new report data
  */
 

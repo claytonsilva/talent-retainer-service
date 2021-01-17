@@ -21,7 +21,7 @@ import {
 } from '../utils'
 
 import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening } from '../business/opening'
-import { EOperation } from '../business/constants'
+import { EOperation, EPersistOperation } from '../business/constants'
 import { sendPayloadtoQueue } from './common'
 
 /**
@@ -31,13 +31,14 @@ import { sendPayloadtoQueue } from './common'
  * @param {Logger} escriba instance of escriba logger
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all) = default ALL
  * @returns {OpeningAdapter} Talent adapter instantied
  */
-const openingAdapterFactory = (escriba, repository, queueRepository) => ({
+const openingAdapterFactory = (escriba, repository, queueRepository, persistOperation = EPersistOperation) => ({
   getOpening: getOpening(repository),
-  createOpening: createOpening(escriba, repository, queueRepository),
-  updateOpening: updateOpening(escriba, repository, queueRepository),
-  deleteOpening: deleteOpening(escriba, repository, queueRepository)
+  createOpening: createOpening(escriba, repository, queueRepository, persistOperation),
+  updateOpening: updateOpening(escriba, repository, queueRepository, persistOperation),
+  deleteOpening: deleteOpening(escriba, repository, queueRepository, persistOperation)
 })
 
 export default openingAdapterFactory
@@ -69,16 +70,23 @@ const getOpening = (repository) => async (id, openingEconomicSegment) => {
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {createOpeningReturn} function to call createOpening direct
  */
-const createOpening = (escriba, repository, queueRepository) => async (params) => {
+const createOpening = (escriba, repository, queueRepository, persistOperation) => async (params) => {
   const methodPath = 'adapters.opening.createOpening'
   try {
+    const documentValidated = validateCreateOpening(params)
+
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'opening', EOperation.CREATE)
+      return documentValidated
+    }
+
     const documentInserted = await repository
       .putDocument(
-        validateCreateOpening(
-          params
-        )
+        documentValidated
       )
 
     escriba.info({
@@ -91,7 +99,7 @@ const createOpening = (escriba, repository, queueRepository) => async (params) =
      * important: cannot block main flow of the data
      */
     try {
-      await sendPayloadtoQueue(escriba, queueRepository)(documentInserted, 'Opening', EOperation.MATCH)
+      await sendPayloadtoQueue(escriba, queueRepository)(documentInserted, 'opening', EOperation.MATCH)
     } catch (error) {
       escriba.error(methodPath, { ...error })
     }
@@ -111,14 +119,20 @@ const createOpening = (escriba, repository, queueRepository) => async (params) =
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {updateOpeningReturn} function to call updateOpening direct
  */
-const updateOpening = (escriba, repository, queueRepository) => async (id, openingEconomicSegment, params) => {
+const updateOpening = (escriba, repository, queueRepository, persistOperation) => async (id, openingEconomicSegment, params) => {
   const methodPath = 'adapters.opening.updateOpening'
   try {
     const currObject = await getOpening(repository)(id, openingEconomicSegment)
+    const documentValidated = validateUpdateOpening(params, currObject)
 
-    const ExpressionAttributeValues = validateUpdateOpening(params, currObject)
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'opening', EOperation.UPDATE)
+      return documentValidated
+    }
 
     const UpdateExpression = `
     set openingCompanyName = :openingCompanyName,
@@ -136,7 +150,7 @@ const updateOpening = (escriba, repository, queueRepository) => async (id, openi
     const documentUpdated = await repository.updateDocument(
       { id, openingEconomicSegment },
       UpdateExpression,
-      ExpressionAttributeValues
+      documentValidated
     )
 
     // log report data
@@ -150,7 +164,7 @@ const updateOpening = (escriba, repository, queueRepository) => async (id, openi
      * important: cannot block main flow of the data
      */
     try {
-      await sendPayloadtoQueue(escriba, queueRepository)(documentUpdated, 'Opening', EOperation.MATCH)
+      await sendPayloadtoQueue(escriba, queueRepository)(documentUpdated, 'opening', EOperation.MATCH)
     } catch (error) {
       escriba.error(methodPath, { ...error })
     }
@@ -171,12 +185,20 @@ const updateOpening = (escriba, repository, queueRepository) => async (id, openi
  * @param {Logger} escriba instance of escriba
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {deleteOpeningReturn} function to call deleteOpening direct
  */
-const deleteOpening = (escriba, repository, queueRepository) => async (id, openingEconomicSegment) => {
+const deleteOpening = (escriba, repository, queueRepository, persistOperation) => async (id, openingEconomicSegment) => {
   const methodPath = 'adapters.opening.deleteOpening'
   try {
     const currObject = validateDeleteOpening(await getOpening(repository)(id, openingEconomicSegment))
+
+    if (persistOperation === EPersistOperation.ONLY_VALIDATE) {
+      // if don't have have queue response, the request will fail
+      await sendPayloadtoQueue(escriba, queueRepository)(currObject, 'opening', EOperation.DELETE)
+      return currObject
+    }
+
     await repository.deleteDocument({ id, openingEconomicSegment })
 
     // log report data
