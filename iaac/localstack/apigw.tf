@@ -82,6 +82,10 @@ resource "aws_api_gateway_method" "talent_get" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "talent_get" {
@@ -101,6 +105,10 @@ resource "aws_api_gateway_method" "talent_post" {
   http_method = "POST"
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "talent_post" {
@@ -125,6 +133,10 @@ resource "aws_api_gateway_method" "talent_put" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "talent_put" {
@@ -136,6 +148,10 @@ resource "aws_api_gateway_integration" "talent_put" {
   type                    = "AWS_PROXY"
   passthrough_behavior    = "WHEN_NO_MATCH"
   uri                     = "${aws_lambda_function.talents_service.invoke_arn}"
+
+  lifecycle {
+    ignore_changes = ["timeout_milliseconds"] // problem with this parameter with localstack
+  }
 }
 
 resource "aws_api_gateway_method" "talent_delete" {
@@ -149,6 +165,10 @@ resource "aws_api_gateway_method" "talent_delete" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "talent_delete" {
@@ -213,6 +233,10 @@ resource "aws_api_gateway_method" "opening_get" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "opening_get" {
@@ -232,6 +256,10 @@ resource "aws_api_gateway_method" "opening_post" {
   http_method = "POST"
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "opening_post" {
@@ -256,6 +284,10 @@ resource "aws_api_gateway_method" "opening_put" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "opening_put" {
@@ -280,6 +312,10 @@ resource "aws_api_gateway_method" "opening_delete" {
   }
 
   authorization = "NONE"
+
+  lifecycle {
+    ignore_changes = ["request_parameters"]
+  }
 }
 
 resource "aws_api_gateway_integration" "opening_delete" {

@@ -1,13 +1,15 @@
 import { getDocument, putDocument, updateDocument, deleteDocument } from '../ports/state-machines/aws.dynamo'
 import { sendMessage } from '../ports/state-machines/aws.sqs'
 import talentAdapterFactory from './talent'
-import { ETalentStatus, ETalentRangeSalary } from '../business/constants'
+import { ETalentStatus, ETalentRangeSalary, EPersistOperation } from '../business/constants'
 import { validateUpdateTalent, validateCreateTalent } from '../business/talent'
 import R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { EClassError } from '../utils'
 import { throwCustomError } from '../utils/errors'
 import * as crypto from 'crypto'
+/** mock error generation to validate signature */
+jest.mock('../utils/errors')
 
 /**
  * function/constants  for  test suite
@@ -67,6 +69,8 @@ const sendMessageMock = (args) => jest.fn().mockResolvedValue({
 
 // mock instantiated adapter
 const adapterInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock)
+// mock async instantiated adapter
+const adapterAsyncInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, EPersistOperation.ONLY_VALIDATE)
 
 describe('getTalent', () => {
   const methodPath = 'adapters.talent.getTalent'
@@ -166,6 +170,35 @@ describe('createTalent', () => {
     expect(sendMessage).toHaveBeenCalled()
   })
 
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const insertedData = await adapterAsyncInstiated.createTalent(newData)
+
+    expect(insertedData).toMatchObject({
+      ...newData
+    })
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'TALENT_CREATED',
+      method: methodPath,
+      data: { documentInserted: insertedData }
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.createTalent(newData)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
   test('throw error when send to queue', async () => {
     const throwMessage = 'error sending to queue'
     repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
@@ -238,7 +271,7 @@ describe('updateTalent', () => {
     repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
     queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
     const updateTalent = await adapterInstiated.updateTalent(newData.id, newData.talentEconomicSegment, updatedData)
-    expect(updateTalent).toMatchObject(updateTalentMock)
+    expect(updateTalent).toMatchObject(R.dissoc('lastUpdateDate', updateTalentMock))
     const updateExpression = `
     set talentName = :talentName,
         talentSurname = :talentSurname,
@@ -258,6 +291,34 @@ describe('updateTalent', () => {
       method: methodPath,
       data: updateTalent
     })
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.updateDocument.mockImplementationOnce((key, updateExpression, expressionAttributeValues) => updateDocumentMock(key, updateExpression, expressionAttributeValues)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const updateTalent = await adapterAsyncInstiated.updateTalent(newData.id, newData.talentEconomicSegment, updatedData)
+    expect(updateTalent).toMatchObject(R.dissoc('lastUpdateDate', updateTalentMock))
+    expect(updateDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'TALENT_UPDATED',
+      method: methodPath,
+      data: updateTalent
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.updateDocument.mockImplementationOnce((key, updateExpression, expressionAttributeValues) => updateDocumentMock(key, updateExpression, expressionAttributeValues)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.updateTalent(newData.id, newData.talentEconomicSegment, updatedData)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
     expect(sendMessage).toHaveBeenCalled()
   })
 
@@ -348,6 +409,34 @@ describe('deleteTalent', () => {
     })
   })
 
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.deleteDocument.mockImplementationOnce((args) => deleteDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const deletedTalent = await adapterAsyncInstiated.deleteTalent(newData.id, newData.talentEconomicSegment)
+    expect(deletedTalent).toMatchObject(newData)
+    expect(deleteDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'TALENT_DELETED',
+      method: methodPath,
+      data: deletedTalent
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.deleteDocument.mockImplementationOnce((args) => deleteDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.deleteTalent(newData.id, newData.talentEconomicSegment)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
   test('throw error', async () => {
     const throwMessage = 'invalid id'
     const deleteDocumentErrorMock = (args) => jest.fn().mockRejectedValue(new Error(throwMessage))
@@ -359,5 +448,23 @@ describe('deleteTalent', () => {
     expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
     expect(getDocument).toHaveBeenCalled()
     expect(getDocument).toHaveBeenCalledWith({ id: newData.id, talentEconomicSegment: newData.talentEconomicSegment })
+  })
+})
+
+describe('talentAdapterFactory', () => {
+  test('default case with empty persistOperation', () => {
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock)
+    expect(escribaMock.error).not.toHaveBeenCalled()
+  })
+
+  test('default case with persistOperation', () => {
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, EPersistOperation.ALL)
+    expect(escribaMock.error).not.toHaveBeenCalled()
+  })
+
+  test('default case with persistOperation INVALID', () => {
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, 'INVALID')
+    expect(escribaMock.error).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalledWith(`system operating in default persistence level: ${EPersistOperation.ALL}`)
   })
 })

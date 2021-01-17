@@ -25,6 +25,11 @@ locals {
     TIMEZONE = "America/Sao_Paulo"
 
     ###################################
+    # SPECIFIC OPTIONS
+    ###################################
+    WRITE_OPERATION_LEVEL = "ALL"
+
+    ###################################
     # AWS SERVICES
     ###################################
     # DYNAMO

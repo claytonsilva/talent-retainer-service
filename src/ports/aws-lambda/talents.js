@@ -36,7 +36,7 @@ export const handler = async (event, context) => {
   const talentQueueRepoInstance = queueRepository(sqs, appConfig.talent.queueUrl)
   const openingQueueRepoInstance = queueRepository(sqs, appConfig.opening.queueUrl)
 
-  const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, openingRepoInstance, openingQueueRepoInstance)
+  const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, openingRepoInstance, openingQueueRepoInstance, appConfig.persistOperation)
 
   const getTalent = async () => {
     try {
