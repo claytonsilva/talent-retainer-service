@@ -6,7 +6,7 @@ jobs:
   build-and-test:
     executor:
       name: node/default
-      tag: "12.18.1"
+      tag: "12.20.0"
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y tzdata
@@ -21,7 +21,7 @@ jobs:
   build-and-test-and-send-to-stryker:
     executor:
       name: node/default
-      tag: "12.18.1"
+      tag: "12.20.0"
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y tzdata
@@ -42,8 +42,8 @@ workflows:
       - build-and-test:
           filters:
             branches:
-              ignore: /^master/
+              ignore: /^main/
       - build-and-test-and-send-to-stryker:
           filters:
             branches:
-              ignore: /^(?!master).*$/
+              ignore: /^(?!main).*$/
