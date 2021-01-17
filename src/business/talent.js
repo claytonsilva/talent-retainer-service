@@ -67,14 +67,14 @@ export const validateCreateTalent = (data) => {
   }
 
   return {
+    // information from system
+    id: uuidv4(),
+    creationDate,
     // default values if is missing
     talentStatus: ETalentStatus.OPEN,
     talentLastSalaryRange: ETalentRangeSalary.NONE,
     talentResume: '-',
-    ...data,
-    // information from system
-    creationDate,
-    id: uuidv4()
+    ...data
   }
 }
 
@@ -131,9 +131,9 @@ export const validateUpdateTalent = (data, originalData) => {
     .reduce(
       (reducedData, field) => R.dissoc(field, reducedData),
       {
+        lastUpdateDate,
         ...originalData,
-        ...data,
-        lastUpdateDate
+        ...data
       }
     )
 }

@@ -67,14 +67,14 @@ export const validateCreateOpening = (data) => {
   }
 
   return {
+    // information from system
+    creationDate,
+    id: uuidv4(),
     // default values if is missing
     openingStatus: EOpeningStatus.OPEN,
     openingSalaryRange: ETalentRangeSalary.NONE,
     openingResume: '-',
-    ...data,
-    // information from system
-    creationDate,
-    id: uuidv4()
+    ...data
   }
 }
 
@@ -131,9 +131,9 @@ export const validateUpdateOpening = (data, originalData) => {
     .reduce(
       (reducedData, field) => R.dissoc(field, reducedData),
       {
+        lastUpdateDate,
         ...originalData,
-        ...data,
-        lastUpdateDate
+        ...data
       }
     )
 }
