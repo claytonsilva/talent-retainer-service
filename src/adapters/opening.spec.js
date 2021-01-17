@@ -1,7 +1,7 @@
 import { getDocument, putDocument, updateDocument, deleteDocument } from '../ports/state-machines/aws.dynamo'
 import { sendMessage } from '../ports/state-machines/aws.sqs'
 import openingAdapterFactory from './opening'
-import { EOpeningStatus, ETalentRangeSalary } from '../business/constants'
+import { EOpeningStatus, ETalentRangeSalary, EPersistOperation } from '../business/constants'
 import { validateUpdateOpening, validateCreateOpening } from '../business/opening'
 import R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
@@ -27,6 +27,9 @@ const toMD5 = (str) => {
     .update(str)
     .digest().toString('base64')
 }
+
+/** mock error generation to validate signature */
+jest.mock('../utils/errors')
 
 throwCustomError.mockImplementation((error) => {
   throw error
@@ -66,6 +69,8 @@ const sendMessageMock = (args) => jest.fn().mockResolvedValue({
 
 // mock instantiated adapter
 const adapterInstiated = openingAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock)
+// mock async instantiated adapter
+const adapterAsyncInstiated = openingAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, EPersistOperation.ONLY_VALIDATE)
 
 describe('getOpening', () => {
   const methodPath = 'adapters.opening.getOpening'
@@ -165,6 +170,35 @@ describe('createOpening', () => {
     expect(sendMessage).toHaveBeenCalled()
   })
 
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const insertedData = await adapterAsyncInstiated.createOpening(newData)
+
+    expect(insertedData).toMatchObject({
+      ...newData
+    })
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'OPENING_CREATED',
+      method: methodPath,
+      data: { documentInserted: insertedData }
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.createOpening(newData)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
   test('throw error when send to queue', async () => {
     const throwMessage = 'error sending to queue'
     repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
@@ -261,6 +295,34 @@ describe('updateOpening', () => {
     expect(sendMessage).toHaveBeenCalled()
   })
 
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.updateDocument.mockImplementationOnce((key, updateExpression, expressionAttributeValues) => updateDocumentMock(key, updateExpression, expressionAttributeValues)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const updateOpening = await adapterAsyncInstiated.updateOpening(newData.id, newData.openingEconomicSegment, updatedData)
+    expect(updateOpening).toMatchObject(R.dissoc('lastUpdateDate', updateOpeningMock))
+    expect(updateDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'OPENING_UPDATED',
+      method: methodPath,
+      data: updateOpening
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.updateDocument.mockImplementationOnce((key, updateExpression, expressionAttributeValues) => updateDocumentMock(key, updateExpression, expressionAttributeValues)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.updateOpening(newData.id, newData.openingEconomicSegment, updatedData)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
   test('throw error when send to queue', async () => {
     const throwMessage = 'error sending to queue'
     repositoryMock.updateDocument.mockImplementationOnce((key, updateExpression, expressionAttributeValues) => updateDocumentMock(key, updateExpression, expressionAttributeValues)())
@@ -336,16 +398,44 @@ describe('deleteOpening', () => {
   test('default case', async () => {
     repositoryMock.deleteDocument.mockImplementationOnce((args) => deleteDocumentMock(args)())
     repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
-    const deletedTalent = await adapterInstiated.deleteOpening(newData.id, newData.openingEconomicSegment)
-    expect(deletedTalent).toMatchObject(newData)
+    const deletedOpening = await adapterInstiated.deleteOpening(newData.id, newData.openingEconomicSegment)
+    expect(deletedOpening).toMatchObject(newData)
     expect(deleteDocument).toHaveBeenCalled()
     expect(deleteDocument).toHaveBeenCalledWith({ id: newData.id, openingEconomicSegment: newData.openingEconomicSegment })
     expect(escribaMock.info).toHaveBeenCalled()
     expect(escribaMock.info).toHaveBeenCalledWith({
       action: 'OPENING_DELETED',
       method: methodPath,
-      data: deletedTalent
+      data: deletedOpening
     })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
+    repositoryMock.deleteDocument.mockImplementationOnce((args) => deleteDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const deletedOpening = await adapterAsyncInstiated.deleteOpening(newData.id, newData.openingEconomicSegment)
+    expect(deletedOpening).toMatchObject(newData)
+    expect(deleteDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalledWith({
+      action: 'OPENING_DELETED',
+      method: methodPath,
+      data: deletedOpening
+    })
+  })
+
+  test(`default case with persistence: "ONLY_VALIDATE" with error on send message`, async () => {
+    const throwMessage = 'error sending to queue'
+    repositoryMock.deleteDocument.mockImplementationOnce((args) => deleteDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce(getDocumentMock)
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => jest.fn().mockRejectedValue(new Error(throwMessage))())
+    await expect(adapterAsyncInstiated.deleteOpening(newData.id, newData.openingEconomicSegment)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(sendMessage).toHaveBeenCalled()
   })
 
   test('throw error', async () => {
