@@ -1,0 +1,22 @@
+{
+	"Records": [
+		{
+			"EventSource": "localstack:sns",
+			"EventVersion": "1.0",
+			"EventSubscriptionArn": "arn:aws:sns:us-east-1:000000000000:talents-matches:0b8ea37e-be0d-4a20-9454-e65f770174dc",
+			"Sns": {
+				"Type": "Notification",
+				"MessageId": "46af10a7-a546-48a4-a414-17ff13c0bff6",
+				"TopicArn": "arn:aws:sns:us-east-1:000000000000:talents-matches",
+				"Subject": "talents-matches",
+				"Message": "\"[\\\"id: 764b8692-c1e4-4c1c-980d-1a82587838a2 / name: tester / surname: tester surname\\\",\\\"id: f727a592-0ad1-4964-9f58-8e0f448506fc / name: clayton / surname: santos da silva\\\"]\"",
+				"Timestamp": "2021-01-18T14:57:27.510Z",
+				"SignatureVersion": "1",
+				"Signature": "EXAMPLEpH+..",
+				"SigningCertUrl": "https://sns.us-east-1.amazonaws.com/SimpleNotificationService-000000000.pem",
+				"UnsubscribeUrl": "http://localhost:4566/?Action=Unsubscribe\u0026SubscriptionArn=arn:aws:sns:us-east-1:000000000000:talents-matches:0b8ea37e-be0d-4a20-9454-e65f770174dc",
+				"MessageAttributes": {}
+			}
+		}
+	]
+}

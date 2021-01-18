@@ -1,0 +1,16 @@
+{
+	"Records": [
+		{
+			"body": "{\"operation\": \"MATCH\",\"payload\": {\"creationDate\":\"2021-01-18T11:25:26.064-03:00\",\"id\":\"a13257e3-d8e8-4d3a-bec5-2954bdbedc22\",\"openingStatus\":\"OPEN\",\"openingSalaryRange\":\"NONE\",\"openingResume\":\"I Need yoy to work here plis :D\",\"openingCompanyName\":\"coboller\",\"openingJobName\":\"DevOps Senior\",\"openingEconomicSegment\":\"Tecnology\",\"openingSoftSkillsTags\":[],\"openingHardSkillsTags\":[\"cobol\"],\"openingRangeSalary\":\"BETWEEN10KAND15K\",\"openingPositionTags\":[]}}",
+			"receiptHandle": "wheultpldcfxbrrolndziphkupqmlehojlrusfoddvnpbpfpwjjihzelrllaffgvpsnnlfiuycyyljnufgqqrqjcxannxwdujzalqloyvhcimwzvqekffuqaegeltjnjoxlkujfwzisjvsjufpksgzhkzmmomjtlepywmvbnspmxkxfjmadfntiwu",
+			"md5OfBody": "74b2140bb18017254fb07a2ed8c65dcf",
+			"eventSourceARN": "arn:aws:sqs:us-east-1:000000000000:talent",
+			"eventSource": "aws:sqs",
+			"awsRegion": "us-east-1",
+			"messageId": "d33a18c3-51c5-2dae-8caa-361a454e29f8",
+			"messageAttributes": {},
+			"md5OfMessageAttributes": null,
+			"sqs": true
+		}
+	]
+}
