@@ -3,7 +3,7 @@ import { EOperation } from '../business/constants'
 // eslint-disable-next-line no-unused-vars
 import { sendMessageReturn } from '../ports/state-machines/aws.sqs'
 // eslint-disable-next-line no-unused-vars
-import { QueueRepositoryInstance } from '../ports/state-machines'
+import { QueueRepositoryInstance, EventRepositoryInstance } from '../ports/state-machines'
 
 import {
   // eslint-disable-next-line no-unused-vars
@@ -46,11 +46,49 @@ export const sendPayloadtoQueue = (escriba, queueRepository) => async (payload, 
 }
 
 /**
- * This callback is displayed as part of the createOpening function.
+ * @description Send message to Topic for processing
+ * @memberof adapters
+ * @async
+ * @function
+ * @throws {CustomError}
+ * @param {Logger} escriba instance of escriba
+ * @param {EventRepositoryInstance} eventRepository state-machine queue methods
+ * @returns {sendPayloadtoSNSTopicReturn} function to call createOpening direct
+ */
+export const sendPayloadtoSNSTopic = (escriba, eventRepository) => async (payload, subject) => {
+  const methodPath = 'adapters.common.sendPayloadtoSNSTopic'
+  try {
+    const result = await eventRepository.publishMessage(JSON.stringify(payload), subject)
+
+    escriba.info({
+      action: 'SEND_PAYLOAD_TO_TOPIC',
+      subject: subject,
+      method: methodPath,
+      snsResult: result,
+      data: { payload }
+    })
+
+    return result
+  } catch (error) {
+    return throwCustomError(error, methodPath, EClassError.INTERNAL)
+  }
+}
+
+/**
+ * This callback is displayed as part of the sendPayloadtoQueue function.
  * @memberof adapters
  * @callback sendPayloadtoQueueReturn
  * @param {Object} payload input param for createOpening
  * @param {string} entityName name of the entity to persist (log usage)
  * @param {EOperation} operation operation to process when worker run
+ * @returns {Promise<sendMessageReturn>} new report data
+ */
+
+/**
+ * This callback is displayed as part of the sendPayloadtoSNSTopic function.
+ * @memberof adapters
+ * @callback sendPayloadtoSNSTopicReturn
+ * @param {Object} payload input param for createOpening
+ * @param {string} subject subject of the message
  * @returns {Promise<sendMessageReturn>} new report data
  */

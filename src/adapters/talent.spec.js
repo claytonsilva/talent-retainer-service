@@ -1,5 +1,6 @@
 import { getDocument, putDocument, updateDocument, deleteDocument, queryDocument } from '../ports/state-machines/aws.dynamo'
 import { sendMessage } from '../ports/state-machines/aws.sqs'
+import { publishMessage } from '../ports/state-machines/aws.sns'
 import talentAdapterFactory from './talent'
 import { ETalentStatus, ETalentRangeSalary, EPersistOperation, EOpeningStatus } from '../business/constants'
 import { validateUpdateTalent, validateCreateTalent } from '../business/talent'
@@ -42,6 +43,9 @@ jest.mock('../ports/state-machines/aws.dynamo')
 // this adapter will mock all methods from aws.sqs port
 jest.mock('../ports/state-machines/aws.sqs')
 
+// this adapter will mock all methods from aws.sns port
+jest.mock('../ports/state-machines/aws.sns')
+
 // mock escriba calls
 const escribaMock = {
   info: jest.fn((args) => (args)).mockReturnValue(undefined),
@@ -61,6 +65,10 @@ const queueRepositoryMock = {
   sendMessage
 }
 
+const eventRepositoryMock = {
+  publishMessage
+}
+
 const sendMessageMock = (args) => jest.fn().mockResolvedValue({
   MD5OfMessageBody: toMD5(randomString()),
   MD5OfMessageAttributes: toMD5(randomString()),
@@ -69,10 +77,18 @@ const sendMessageMock = (args) => jest.fn().mockResolvedValue({
   SequenceNumber: 123
 })
 
+const publishMessageMock = (args) => jest.fn().mockResolvedValue({
+  MD5OfMessageBody: toMD5(randomString()),
+  MD5OfMessageAttributes: toMD5(randomString()),
+  MD5OfMessageSystemAttributes: toMD5(randomString()),
+  MessageId: uuidv4(),
+  SequenceNumber: 123
+})
+
 // mock instantiated adapter
-const adapterInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock)
+const adapterInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, eventRepositoryMock)
 // mock async instantiated adapter
-const adapterAsyncInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, EPersistOperation.ONLY_VALIDATE)
+const adapterAsyncInstiated = talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, eventRepositoryMock, EPersistOperation.ONLY_VALIDATE)
 
 describe('getTalent', () => {
   const methodPath = 'adapters.talent.getTalent'
@@ -457,6 +473,7 @@ describe('matchTalentsFromOpening', () => {
   const methodPath = 'adapters.talent.matchTalentsFromOpening'
   beforeEach(() => {
     queryDocument.mockReset()
+    publishMessage.mockReset()
   })
 
   const queryDocumentMock = (args) => jest.fn().mockResolvedValue(
@@ -492,6 +509,7 @@ describe('matchTalentsFromOpening', () => {
 
   test('default case', async () => {
     repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentMock(args)())
+    eventRepositoryMock.publishMessage.mockImplementationOnce((args) => publishMessageMock(args)())
 
     const opening = validateCreateOpening({
       openingCompanyName: 'tester',
@@ -529,9 +547,55 @@ describe('matchTalentsFromOpening', () => {
         ':talentPositionTags2': 'techleader',
         ':talentSoftSkillsTags0': 'leadership'
       })
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(publishMessage).toHaveBeenCalled()
   })
 
-  test('throw error', async () => {
+  test('empty result', async () => {
+    const queryDocumentMockEmpty = (args) => jest.fn().mockResolvedValue([])
+    repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentMockEmpty(args)())
+    eventRepositoryMock.publishMessage.mockImplementationOnce((args) => publishMessageMock(args)())
+
+    const opening = validateCreateOpening({
+      openingCompanyName: 'tester',
+      openingJobName: 'DevOps Senior',
+      openingEconomicSegment: 'Tecnology',
+      openingSoftSkillsTags: ['leadership'],
+      openingHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      openingRangeSalary: ETalentRangeSalary.BETWEEN10KAND15K,
+      openingPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      openingResume: 'I Need yoy to work here plis :D',
+      openingStatus: EOpeningStatus.OPEN
+    })
+
+    await expect(adapterInstiated.matchTalentsFromOpening(opening)).resolves.toHaveLength(0)
+    expect(queryDocument).toHaveBeenCalled()
+    expect(queryDocument).toHaveBeenLastCalledWith(
+      'talentEconomicSegment = :talentEconomicSegment',
+      ` talentStatus in (:OPEN, :LOOKING)
+  AND ( contains(talentPositionTags, :talentPositionTags0)
+        OR contains(talentPositionTags, :talentPositionTags1)
+        OR contains(talentPositionTags, :talentPositionTags2)
+        OR contains(talentSoftSkillsTags, :talentSoftSkillsTags0)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags0)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags1)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags2))`,
+      {
+        ':LOOKING': 'LOOKING',
+        ':OPEN': 'OPEN',
+        ':talentEconomicSegment': 'Tecnology',
+        ':talentHardSkillsTags0': 'java',
+        ':talentHardSkillsTags1': 'devops',
+        ':talentHardSkillsTags2': 'hashicorp',
+        ':talentPositionTags0': 'backend:senior',
+        ':talentPositionTags1': 'backend:junior',
+        ':talentPositionTags2': 'techleader',
+        ':talentSoftSkillsTags0': 'leadership'
+      })
+    expect(publishMessage).not.toHaveBeenCalled()
+  })
+
+  test('throw error on queue', async () => {
     const opening = validateCreateOpening({
       openingCompanyName: 'tester',
       openingJobName: 'DevOps Senior',
@@ -546,26 +610,53 @@ describe('matchTalentsFromOpening', () => {
     const throwMessage = 'invalid query'
     const queryDocumentErrorMock = (args) => jest.fn().mockRejectedValue(new Error(throwMessage))
     repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentErrorMock(args)())
+    eventRepositoryMock.publishMessage.mockImplementationOnce((args) => publishMessageMock(args)())
     await expect(adapterInstiated.matchTalentsFromOpening(opening)).rejects.toThrow(throwMessage)
     // throws correct message
     expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
     expect(queryDocument).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalled()
+    expect(publishMessage).not.toHaveBeenCalled()
+  })
+
+  test('throw error on sns', async () => {
+    const opening = validateCreateOpening({
+      openingCompanyName: 'tester',
+      openingJobName: 'DevOps Senior',
+      openingEconomicSegment: 'Tecnology',
+      openingSoftSkillsTags: ['leadership'],
+      openingHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      openingRangeSalary: ETalentRangeSalary.BETWEEN10KAND15K,
+      openingPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      openingResume: 'I Need yoy to work here plis :D',
+      openingStatus: EOpeningStatus.OPEN
+    })
+    const throwMessage = 'invalid topic'
+    repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentMock(args)())
+    const eventErrorMock = (args) => jest.fn().mockRejectedValue(new Error(throwMessage))
+    eventRepositoryMock.publishMessage.mockImplementationOnce((args) => eventErrorMock(args)())
+    await expect(adapterInstiated.matchTalentsFromOpening(opening)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(queryDocument).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalled()
+    expect(publishMessage).toHaveBeenCalled()
   })
 })
 
 describe('talentAdapterFactory', () => {
   test('default case with empty persistOperation', () => {
-    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock)
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, eventRepositoryMock)
     expect(escribaMock.error).not.toHaveBeenCalled()
   })
 
   test('default case with persistOperation', () => {
-    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, EPersistOperation.ALL)
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, eventRepositoryMock, EPersistOperation.ALL)
     expect(escribaMock.error).not.toHaveBeenCalled()
   })
 
   test('default case with persistOperation INVALID', () => {
-    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, 'INVALID')
+    talentAdapterFactory(escribaMock, repositoryMock, queueRepositoryMock, eventRepositoryMock, 'INVALID')
     expect(escribaMock.error).toHaveBeenCalled()
     expect(escribaMock.info).toHaveBeenCalledWith(`system operating in default persistence level: ${EPersistOperation.ALL}`)
   })
