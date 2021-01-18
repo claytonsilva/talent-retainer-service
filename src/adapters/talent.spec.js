@@ -1,8 +1,9 @@
-import { getDocument, putDocument, updateDocument, deleteDocument } from '../ports/state-machines/aws.dynamo'
+import { getDocument, putDocument, updateDocument, deleteDocument, queryDocument } from '../ports/state-machines/aws.dynamo'
 import { sendMessage } from '../ports/state-machines/aws.sqs'
 import talentAdapterFactory from './talent'
-import { ETalentStatus, ETalentRangeSalary, EPersistOperation } from '../business/constants'
+import { ETalentStatus, ETalentRangeSalary, EPersistOperation, EOpeningStatus } from '../business/constants'
 import { validateUpdateTalent, validateCreateTalent } from '../business/talent'
+import { validateCreateOpening } from '../business/opening'
 import R from 'ramda'
 import { v4 as uuidv4 } from 'uuid'
 import { EClassError } from '../utils'
@@ -52,7 +53,8 @@ const repositoryMock = {
   getDocument,
   putDocument,
   updateDocument,
-  deleteDocument
+  deleteDocument,
+  queryDocument
 }
 
 const queueRepositoryMock = {
@@ -448,6 +450,106 @@ describe('deleteTalent', () => {
     expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
     expect(getDocument).toHaveBeenCalled()
     expect(getDocument).toHaveBeenCalledWith({ id: newData.id, talentEconomicSegment: newData.talentEconomicSegment })
+  })
+})
+
+describe('matchTalentsFromOpening', () => {
+  const methodPath = 'adapters.talent.matchTalentsFromOpening'
+  beforeEach(() => {
+    queryDocument.mockReset()
+  })
+
+  const queryDocumentMock = (args) => jest.fn().mockResolvedValue(
+    [{
+      ...validateCreateTalent({
+        talentName: 'tester',
+        talentSurname: 'tester surname',
+        talentEconomicSegment: 'Tecnology',
+        talentSoftSkillsTags: ['leadership'],
+        talentHardSkillsTags: ['java', 'devops', 'hashicorp'],
+        talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+        talentPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+        talentResume: 'I\'m happy \n and i love my carreer',
+        talentStatus: ETalentStatus.OPEN
+      }),
+      id: args.id
+    },
+    {
+      ...validateCreateTalent({
+        talentName: 'tester-2',
+        talentSurname: 'tester-2 surname',
+        talentEconomicSegment: 'Tecnology',
+        talentSoftSkillsTags: ['leadership'],
+        talentHardSkillsTags: ['javascripto'],
+        talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+        talentPositionTags: [],
+        talentResume: 'I\'m happy \n and i love my carreer',
+        talentStatus: ETalentStatus.OPEN
+      }),
+      id: args.id
+    }]
+  )
+
+  test('default case', async () => {
+    repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentMock(args)())
+
+    const opening = validateCreateOpening({
+      openingCompanyName: 'tester',
+      openingJobName: 'DevOps Senior',
+      openingEconomicSegment: 'Tecnology',
+      openingSoftSkillsTags: ['leadership'],
+      openingHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      openingRangeSalary: ETalentRangeSalary.BETWEEN10KAND15K,
+      openingPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      openingResume: 'I Need yoy to work here plis :D',
+      openingStatus: EOpeningStatus.OPEN
+    })
+
+    await expect(adapterInstiated.matchTalentsFromOpening(opening)).resolves.toHaveLength(2)
+    expect(queryDocument).toHaveBeenCalled()
+    expect(queryDocument).toHaveBeenLastCalledWith(
+      'talentEconomicSegment = :talentEconomicSegment',
+      ` talentStatus in (:OPEN, :LOOKING)
+  AND ( contains(talentPositionTags, :talentPositionTags0)
+        OR contains(talentPositionTags, :talentPositionTags1)
+        OR contains(talentPositionTags, :talentPositionTags2)
+        OR contains(talentSoftSkillsTags, :talentSoftSkillsTags0)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags0)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags1)
+        OR contains(talentHardSkillsTags, :talentHardSkillsTags2))`,
+      {
+        ':LOOKING': 'LOOKING',
+        ':OPEN': 'OPEN',
+        ':talentEconomicSegment': 'Tecnology',
+        ':talentHardSkillsTags0': 'java',
+        ':talentHardSkillsTags1': 'devops',
+        ':talentHardSkillsTags2': 'hashicorp',
+        ':talentPositionTags0': 'backend:senior',
+        ':talentPositionTags1': 'backend:junior',
+        ':talentPositionTags2': 'techleader',
+        ':talentSoftSkillsTags0': 'leadership'
+      })
+  })
+
+  test('throw error', async () => {
+    const opening = validateCreateOpening({
+      openingCompanyName: 'tester',
+      openingJobName: 'DevOps Senior',
+      openingEconomicSegment: 'Tecnology',
+      openingSoftSkillsTags: ['leadership'],
+      openingHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      openingRangeSalary: ETalentRangeSalary.BETWEEN10KAND15K,
+      openingPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      openingResume: 'I Need yoy to work here plis :D',
+      openingStatus: EOpeningStatus.OPEN
+    })
+    const throwMessage = 'invalid query'
+    const queryDocumentErrorMock = (args) => jest.fn().mockRejectedValue(new Error(throwMessage))
+    repositoryMock.queryDocument.mockImplementationOnce((args) => queryDocumentErrorMock(args)())
+    await expect(adapterInstiated.matchTalentsFromOpening(opening)).rejects.toThrow(throwMessage)
+    // throws correct message
+    expect(throwCustomError).toHaveBeenCalledWith(new Error(throwMessage), methodPath, EClassError.INTERNAL)
+    expect(queryDocument).toHaveBeenCalled()
   })
 })
 
