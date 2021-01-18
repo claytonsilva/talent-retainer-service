@@ -188,6 +188,60 @@ describe('createTalent', () => {
     expect(sendMessage).toHaveBeenCalled()
   })
 
+  test('default case with validated object (without conflict)', async () => {
+    const getEmptyDocumentMock = (args) => jest.fn().mockResolvedValue(null)
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce((args) => getEmptyDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const insertedData = await adapterInstiated.createTalent(validateCreateTalent(newData))
+
+    expect(insertedData).toMatchObject({
+      ...newData
+    })
+    expect(putDocument).toHaveBeenCalled()
+    expect(getDocument).toHaveBeenCalled()
+    expect(putDocument).toHaveBeenLastCalledWith(insertedData)
+    expect(escribaMock.info).toHaveBeenCalled()
+    expect(escribaMock.info).toHaveBeenCalledWith({
+      action: 'TALENT_CREATED',
+      method: methodPath,
+      data: { documentInserted: insertedData }
+    })
+    expect(sendMessage).toHaveBeenCalled()
+  })
+
+  test('default case with validated object (with conflict)', async () => {
+    const getDocumentMock = (args) => jest.fn().mockResolvedValue(
+      {
+        ...validateCreateTalent({
+          talentName: 'tester',
+          talentSurname: 'tester surname',
+          talentEconomicSegment: 'Tecnology',
+          talentSoftSkillsTags: ['leadership'],
+          talentHardSkillsTags: ['java', 'devops', 'hashicorp'],
+          talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+          talentPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+          talentResume: 'I\'m happy \n and i love my carreer',
+          talentStatus: ETalentStatus.OPEN
+        }),
+        id: args.id
+      }
+    )
+
+    repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
+    repositoryMock.getDocument.mockImplementationOnce((args) => getDocumentMock(args)())
+    queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
+    const insertedData = await adapterInstiated.createTalent(validateCreateTalent(newData))
+
+    expect(insertedData).toMatchObject({
+      ...newData
+    })
+    expect(putDocument).not.toHaveBeenCalled()
+    expect(getDocument).toHaveBeenCalled()
+    expect(escribaMock.info).not.toHaveBeenCalled()
+    expect(sendMessage).not.toHaveBeenCalled()
+  })
+
   test(`default case with persistence: "ONLY_VALIDATE"`, async () => {
     repositoryMock.putDocument.mockImplementationOnce((args) => putDocumentMock(args)())
     queueRepositoryMock.sendMessage.mockImplementationOnce((args) => sendMessageMock(args)())
