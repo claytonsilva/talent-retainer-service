@@ -21,7 +21,7 @@ import {
   // eslint-disable-next-line no-unused-vars
   sendMessageReturn, deleteMessageReturn, receiveMessageReturn
 } from './aws.sqs'
-import { updateDocument, getDocument, putDocument, deleteDocument } from './aws.dynamo'
+import { updateDocument, getDocument, putDocument, deleteDocument, queryDocument } from './aws.dynamo'
 
 /***
  * repositories
@@ -41,7 +41,8 @@ export const databaseRepository = (dynamo, tableName) => {
     updateDocument: updateDocument(dynamo, tableName),
     getDocument: getDocument(dynamo, tableName),
     putDocument: putDocument(dynamo, tableName),
-    deleteDocument: deleteDocument(dynamo, tableName)
+    deleteDocument: deleteDocument(dynamo, tableName),
+    queryDocument: queryDocument(dynamo, tableName)
   }
 }
 
@@ -89,6 +90,7 @@ export const queueRepository = (sqs, queueUrl, maxNumberOfMessages) => {
  * @property {getDocumentReturn} getDocument function to get existing document (instantiated).
  * @property {putDocumentReturn} putDocument function to create existing document (instantiated).
  * @property {deleteDocumentReturn} deleteDocument function to delete existing document (instantiated).
+ * @property {queryDocumentReturn} queryDocument function to query documents (instantiated).
  */
 
 /**
@@ -121,4 +123,15 @@ export const queueRepository = (sqs, queueUrl, maxNumberOfMessages) => {
 *
 * @callback deleteDocumentReturn
 * @param {Object} key - key of the data
+*/
+
+/**
+* This callback is displayed as part of the queryDocument (inner DynamoRepositoryInstance) function.
+*
+* @callback queryDocumentReturn
+* @param {string} keyConditionExpression expression for key condition. Ex.: a = :a
+* @param {string} filterExpression expression for filter inner data Ex.: a = :a
+* @param {Object} expressionAttributeValues expression for attribut values. Ex.: { ':a': 1 }
+* @param {boolean} [consistentRead] determines the read consistency model. If set to true, then the operation uses strongly consistent reads; otherwise, the operation uses eventually consistent reads
+* @returns {Promise<DynamoDB.DocumentClient.ItemList>}
 */

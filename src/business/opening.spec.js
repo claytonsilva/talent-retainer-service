@@ -1,7 +1,8 @@
 // eslint-disable-next-line no-unused-vars
 import { MutateOpeningInputCreate, MutateOpeningInputUpdate } from '../business'
-import { EOpeningStatus, ETalentRangeSalary } from './constants'
-import { validateCreateOpening, validateUpdateOpening, validateDeleteOpening } from './opening'
+import { EOpeningStatus, ETalentRangeSalary, ETalentStatus } from './constants'
+import { validateCreateOpening, validateUpdateOpening, validateDeleteOpening, generateFilterExpression } from './opening'
+import { validateCreateTalent } from './talent'
 import { EClassError } from '../utils'
 import { throwCustomError } from '../utils/errors'
 
@@ -497,5 +498,177 @@ describe('validateDeleteOpening', () => {
   test('validate normal delete', () => {
     expect(validateDeleteOpening(defaultOriginalData))
       .toMatchObject(defaultOriginalData)
+  })
+})
+
+describe('generateFilterExpression', () => {
+  test('case 1 complete lists in all fields', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: ['leadership'],
+      talentHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  AND ( contains(openingPositionTags, :openingPositionTags0)
+        OR contains(openingPositionTags, :openingPositionTags1)
+        OR contains(openingPositionTags, :openingPositionTags2)
+        OR contains(openingSoftSkillsTags, :openingSoftSkillsTags0)
+        OR contains(openingHardSkillsTags, :openingHardSkillsTags0)
+        OR contains(openingHardSkillsTags, :openingHardSkillsTags1)
+        OR contains(openingHardSkillsTags, :openingHardSkillsTags2))`)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':openingPositionTags0': 'backend:senior',
+        ':openingPositionTags1': 'backend:junior',
+        ':openingPositionTags2': 'techleader',
+        ':openingSoftSkillsTags0': 'leadership',
+        ':openingHardSkillsTags0': 'java',
+        ':openingHardSkillsTags1': 'devops',
+        ':openingHardSkillsTags2': 'hashicorp',
+        ':OPEN': 'OPEN'
+      })
+  })
+
+  test('case 2 all lists is empty', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: [],
+      talentHardSkillsTags: [],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: [],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  `)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':OPEN': 'OPEN'
+      })
+  })
+
+  test('case 3 only 1 lists is not empty (hard skills)', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: [],
+      talentHardSkillsTags: ['java', 'devops', 'hashicorp'],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: [],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  AND ( contains(openingHardSkillsTags, :openingHardSkillsTags0)
+        OR contains(openingHardSkillsTags, :openingHardSkillsTags1)
+        OR contains(openingHardSkillsTags, :openingHardSkillsTags2))`)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':openingHardSkillsTags0': 'java',
+        ':openingHardSkillsTags1': 'devops',
+        ':openingHardSkillsTags2': 'hashicorp',
+        ':OPEN': 'OPEN'
+      })
+  })
+
+  test('case 4 only 1 lists is not empty (position)', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: [],
+      talentHardSkillsTags: [],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  AND ( contains(openingPositionTags, :openingPositionTags0)
+        OR contains(openingPositionTags, :openingPositionTags1)
+        OR contains(openingPositionTags, :openingPositionTags2))`)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':openingPositionTags0': 'backend:senior',
+        ':openingPositionTags1': 'backend:junior',
+        ':openingPositionTags2': 'techleader',
+        ':OPEN': 'OPEN'
+      })
+  })
+
+  test('case 5 only 1 lists is not empty (soft skills)', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: ['leadership'],
+      talentHardSkillsTags: [],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: [],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  AND ( contains(openingSoftSkillsTags, :openingSoftSkillsTags0))`)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':openingSoftSkillsTags0': 'leadership',
+        ':OPEN': 'OPEN'
+      })
+  })
+
+  test('case 6 only 2 lists is not empty (position and softskills)', () => {
+    const talent = validateCreateTalent({
+      talentName: 'tester',
+      talentSurname: 'tester surname',
+      talentEconomicSegment: 'Tecnology',
+      talentSoftSkillsTags: ['leadership'],
+      talentHardSkillsTags: [],
+      talentLastSalaryRange: ETalentRangeSalary.BETWEEN10KAND15K,
+      talentPositionTags: ['backend:senior', 'backend:junior', 'techleader'],
+      talentResume: 'I\'m happy \n and i love my carreer',
+      talentStatus: ETalentStatus.OPEN
+    })
+
+    const generatedObject = generateFilterExpression(talent)
+    expect(generatedObject.filterExpression).toBe(` openingStatus = :OPEN
+  AND ( contains(openingPositionTags, :openingPositionTags0)
+        OR contains(openingPositionTags, :openingPositionTags1)
+        OR contains(openingPositionTags, :openingPositionTags2)
+        OR contains(openingSoftSkillsTags, :openingSoftSkillsTags0))`)
+
+    expect(generatedObject.expressionAttributeValuesQuery).toMatchObject(
+      {
+        ':openingEconomicSegment': 'Tecnology',
+        ':openingSoftSkillsTags0': 'leadership',
+        ':openingPositionTags0': 'backend:senior',
+        ':openingPositionTags1': 'backend:junior',
+        ':openingPositionTags2': 'techleader',
+        ':OPEN': 'OPEN'
+      })
   })
 })

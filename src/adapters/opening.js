@@ -7,7 +7,7 @@ import { Logger } from 'log4js'
 // eslint-disable-next-line no-unused-vars
 import { DynamoRepositoryInstance, QueueRepositoryInstance } from '../ports/state-machines'
 // eslint-disable-next-line no-unused-vars
-import { MutateOpeningInputCreate, MutateOpeningInputUpdate, Opening, OpeningKey } from '../business'
+import { MutateOpeningInputCreate, MutateOpeningInputUpdate, Opening, OpeningKey, Talent } from '../business'
 
 /**
  * code imports
@@ -20,26 +20,51 @@ import {
   throwCustomError
 } from '../utils'
 
-import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening } from '../business/opening'
-import { EOperation, EPersistOperation } from '../business/constants'
+import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening, generateFilterExpression } from '../business/opening'
+import { EOperation, EPersistOperation, validatePersistOperation } from '../business/constants'
 import { sendPayloadtoQueue } from './common'
 
 /**
- * @description Talent adapter factory
+ * @description Opening adapter factory
  * @memberof adapters
  * @function
  * @param {Logger} escriba instance of escriba logger
  * @param {DynamoRepositoryInstance} repository state-machine database methods
  * @param {QueueRepositoryInstance} queueRepository state-machine queue methods
- * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all) = default ALL
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
  * @returns {OpeningAdapter} Talent adapter instantied
  */
-const openingAdapterFactory = (escriba, repository, queueRepository, persistOperation = EPersistOperation) => ({
-  getOpening: getOpening(repository),
-  createOpening: createOpening(escriba, repository, queueRepository, persistOperation),
-  updateOpening: updateOpening(escriba, repository, queueRepository, persistOperation),
-  deleteOpening: deleteOpening(escriba, repository, queueRepository, persistOperation)
-})
+const openingAdapterFactory = (escriba, repository, queueRepository, persistOperation = EPersistOperation.ALL) => {
+  const methodPath = 'adapters.opening.openingAdapterFactory'
+  try {
+    validatePersistOperation(persistOperation)
+  } catch (error) {
+    escriba.error(methodPath, { ...error })
+
+    /**
+     * if cannot recognize option, the system operate in fallback option
+     */
+    escriba.info(`system operating in default persistence level: ${EPersistOperation.ALL}`)
+
+    return {
+      getOpening: getOpening(repository),
+      createOpening: createOpening(escriba, repository, queueRepository, EPersistOperation.ALL),
+      updateOpening: updateOpening(escriba, repository, queueRepository, EPersistOperation.ALL),
+      deleteOpening: deleteOpening(escriba, repository, queueRepository, EPersistOperation.ALL),
+      matchOpeningsFromTalent: matchOpeningsFromTalent(repository)
+    }
+  }
+
+  escriba.info(`system operating in persistence level: ${persistOperation}`)
+
+  return {
+    getOpening: getOpening(repository),
+    createOpening: createOpening(escriba, repository, queueRepository, persistOperation),
+    updateOpening: updateOpening(escriba, repository, queueRepository, persistOperation),
+    deleteOpening: deleteOpening(escriba, repository, queueRepository, persistOperation),
+    matchOpeningsFromTalent: matchOpeningsFromTalent(repository)
+  }
+}
 
 export default openingAdapterFactory
 
@@ -215,6 +240,27 @@ const deleteOpening = (escriba, repository, queueRepository, persistOperation) =
 }
 
 /**
+ * @description match Openings from talent entry
+ * @memberof adapters
+ * @async
+ * @function
+ * @throws {CustomError}
+ * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
+ * @returns {matchOpeningsFromTalentReturn} function to call deleteTalent direct
+ */
+const matchOpeningsFromTalent = (repository) => async (talent) => {
+  const methodPath = 'adapters.opening.matchOpeningsFromTalent'
+  try {
+    const { keyConditionExpression, filterExpression, expressionAttributeValuesQuery } = generateFilterExpression(talent)
+    const matches = await repository.queryDocument(keyConditionExpression, filterExpression, expressionAttributeValuesQuery)
+    return matches
+  } catch (error) {
+    throwCustomError(error, methodPath, EClassError.INTERNAL)
+  }
+}
+
+/**
  * complex callbacks documentation
  *
  */
@@ -225,6 +271,7 @@ const deleteOpening = (escriba, repository, queueRepository, persistOperation) =
  * @property {createOpeningReturn} createOpening function to generate opening (instantiated).
  * @property {updateOpeningReturn} updateOpening function to update opening  (instantiated).
  * @property {deleteOpeningReturn} deleteOpening function to delete opening (instantiated).
+ * @property {matchOpeningsFromTalentReturn} matchOpeningsFromTalent function to query openings from matching (instantiated).
  */
 
 /**
@@ -261,4 +308,12 @@ const deleteOpening = (escriba, repository, queueRepository, persistOperation) =
  * @param {string} id key of the data
  * @param {string} openingEconomicSegment partition key of the data
  * @returns {Promise<Opening>} task from repository
+ */
+
+/**
+ * This callback is displayed as part of the matchOpeningsFromTalent function.
+ * @memberof adapters
+ * @callback matchOpeningsFromTalentReturn
+ * @param {Talent} talent data to use in query
+ * @returns {Promise<[Opening]>} task from repository
  */

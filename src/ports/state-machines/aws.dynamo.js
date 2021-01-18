@@ -125,6 +125,34 @@ export const deleteDocument = (dynamo, tableName) => async (key) => {
 }
 
 /**
+ * List documents on table TableName in the DynamoDB.
+ *
+ * @memberof ports/state-machines
+ * @async
+ * @function
+ * @throws {CustomError}
+ * @param {DynamoDB.DocumentClient} dynamo instance of Dynamo SDK for aws (DocumentClient)
+ * @param {string} tableName name of table in DynamoDB
+ * @returns {queryDocumentReturn} Documents searched from table
+ */
+export const queryDocument = (dynamo, tableName) => async (keyConditionExpression, filterExpression, expressionAttributeValues, consistentRead) => {
+  try {
+    const params = {
+      ExpressionAttributeValues: expressionAttributeValues,
+      KeyConditionExpression: keyConditionExpression,
+      TableName: tableName,
+      FilterExpression: filterExpression
+    }
+
+    const result = await dynamo.query(R.not(R.isNil(consistentRead)) ? { ...params, ConsistentRead: consistentRead } : params).promise()
+
+    return result && result.Items ? result.Items : []
+  } catch (error) {
+    throwCustomError(error, 'state-machines.aws.dynamo.queryDocument', classError.INTERNAL)
+  }
+}
+
+/**
  * @description Add ":" in all variables in prefix remaping the object
  *
  * @memberof state-machines
@@ -167,6 +195,7 @@ export const remapPrevixVariables = (obj) => {
 *
 * @callback putDocumentReturn
 * @param {Object} item - object to persist
+* @returns {Object} - object inserted from state-machine
 */
 
 /**
@@ -174,4 +203,16 @@ export const remapPrevixVariables = (obj) => {
 *
 * @callback deleteDocumentReturn
 * @param {Object} key - key of the data
+* @returns {Object} - object deleted from state-machine
+*/
+
+/**
+* This callback is displayed as part of the queryDocument (inner DynamoRepositoryInstance) function.
+*
+* @callback queryDocumentReturn
+* @param {string} keyConditionExpression expression for key condition. Ex.: a = :a
+* @param {string} filterExpression expression for filter inner data Ex.: a = :a
+* @param {Object} expressionAttributeValues expression for attribut values. Ex.: { ':a': 1 }
+* @param {boolean} [consistentRead] determines the read consistency model. If set to true, then the operation uses strongly consistent reads; otherwise, the operation uses eventually consistent reads
+* @returns {Promise<DynamoDB.DocumentClient.ItemList>}
 */

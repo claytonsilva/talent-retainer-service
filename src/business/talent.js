@@ -2,14 +2,14 @@
  * reference only imports (for documentation)
  */
 // eslint-disable-next-line no-unused-vars
-import { Talent, MutateTalentInputCreate, MutateTalentInputUpdate } from './index'
+import { Talent, MutateTalentInputCreate, MutateTalentInputUpdate, Opening } from './index'
 /**
  * code imports
  */
 import { v4 as uuidv4 } from 'uuid'
 import { toISOString } from './moment'
 import { ETalentRangeSalary, ETalentStatus } from './constants'
-import { validateInnerArrayString } from './common'
+import { validateInnerArrayString, reduceContains } from './common'
 import R from 'ramda'
 import {
   EClassError,
@@ -154,3 +154,43 @@ export const validateDeleteTalent = (originalData) => {
 
   return originalData
 }
+
+/**
+   * @description Generate FilterExpression based on entry data for query
+   * @memberof business
+   * @function
+   * @throws {CustomError}
+   * @param {Opening} opening opening to filter in talents base
+   * @returns {FilterExpressionObject}
+   */
+export const generateFilterExpression = (opening) => {
+  const contains = opening.openingHardSkillsTags.reduce(reduceContains('talentHardSkillsTags'),
+    opening.openingSoftSkillsTags.reduce(reduceContains('talentSoftSkillsTags'),
+      opening.openingPositionTags.reduce(reduceContains('talentPositionTags'), {
+        expression: '',
+        value: {}
+      })
+    )
+  )
+
+  const containsExpression = R.isEmpty(contains.expression) ? '' : `AND (${contains.expression})`
+
+  return {
+    keyConditionExpression: `talentEconomicSegment = :talentEconomicSegment`,
+    filterExpression: ` talentStatus in (:${ETalentStatus.OPEN}, :${ETalentStatus.LOOKING})
+  ${containsExpression}`,
+    expressionAttributeValuesQuery: R.assoc(`:${ETalentStatus.OPEN}`, ETalentStatus.OPEN,
+      R.assoc(`:${ETalentStatus.LOOKING}`, ETalentStatus.LOOKING, {
+        ':talentEconomicSegment': opening.openingEconomicSegment,
+        ...contains.value
+      })
+    )
+  }
+}
+
+/**
+ * @typedef {Object} FilterExpressionObject
+ * @property {string} keyConditionExpression keys for filter inner hash key
+ * @property {string} filterExpression  advanced filter expression inner hash filtered values
+ * @property {Object} expressionAttributeValuesQuery  values from filter
+ */

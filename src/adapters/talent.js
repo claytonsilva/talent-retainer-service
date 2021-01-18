@@ -7,7 +7,7 @@ import { Logger } from 'log4js'
 // eslint-disable-next-line no-unused-vars
 import { DynamoRepositoryInstance, QueueRepositoryInstance } from '../ports/state-machines'
 // eslint-disable-next-line no-unused-vars
-import { MutateTalentInputCreate, MutateTalentInputUpdate, Talent, TalentKey } from '../business'
+import { MutateTalentInputCreate, MutateTalentInputUpdate, Talent, Opening } from '../business'
 
 /**
  * code imports
@@ -20,7 +20,7 @@ import {
   throwCustomError
 } from '../utils'
 
-import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent } from '../business/talent'
+import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent, generateFilterExpression } from '../business/talent'
 import { EOperation, EPersistOperation, validatePersistOperation } from '../business/constants'
 import { sendPayloadtoQueue } from './common'
 
@@ -47,20 +47,22 @@ const talentAdapterFactory = (escriba, repository, queueRepository, persistOpera
     escriba.info(`system operating in default persistence level: ${EPersistOperation.ALL}`)
 
     return {
-      getTalent: getTalent(repository, EPersistOperation.ALL),
+      getTalent: getTalent(repository),
       createTalent: createTalent(escriba, repository, queueRepository, EPersistOperation.ALL),
       updateTalent: updateTalent(escriba, repository, queueRepository, EPersistOperation.ALL),
-      deleteTalent: deleteTalent(escriba, repository, queueRepository, EPersistOperation.ALL)
+      deleteTalent: deleteTalent(escriba, repository, queueRepository, EPersistOperation.ALL),
+      matchTalentsFromOpening: matchTalentsFromOpening(repository)
     }
   }
 
   escriba.info(`system operating in persistence level: ${persistOperation}`)
 
   return {
-    getTalent: getTalent(repository, persistOperation),
+    getTalent: getTalent(repository),
     createTalent: createTalent(escriba, repository, queueRepository, persistOperation),
     updateTalent: updateTalent(escriba, repository, queueRepository, persistOperation),
-    deleteTalent: deleteTalent(escriba, repository, queueRepository, persistOperation)
+    deleteTalent: deleteTalent(escriba, repository, queueRepository, persistOperation),
+    matchTalentsFromOpening: matchTalentsFromOpening(repository)
   }
 }
 
@@ -238,6 +240,27 @@ const deleteTalent = (escriba, repository, queueRepository, persistOperation) =>
 }
 
 /**
+ * @description match Talents from opening entry
+ * @memberof adapters
+ * @async
+ * @function
+ * @throws {CustomError}
+ * @param {DynamoRepositoryInstance} repository state-machine database methods
+ * @param {EPersistOperation} persistOperation option for persist operation (validate/persist/all)
+ * @returns {matchTalentsFromOpeningReturn} function to call deleteTalent direct
+ */
+const matchTalentsFromOpening = (repository) => async (opening) => {
+  const methodPath = 'adapters.talent.matchTalentsFromOpening'
+  try {
+    const { keyConditionExpression, filterExpression, expressionAttributeValuesQuery } = generateFilterExpression(opening)
+    const matches = await repository.queryDocument(keyConditionExpression, filterExpression, expressionAttributeValuesQuery)
+    return matches
+  } catch (error) {
+    throwCustomError(error, methodPath, EClassError.INTERNAL)
+  }
+}
+
+/**
  * complex callbacks documentation
  *
  */
@@ -248,6 +271,7 @@ const deleteTalent = (escriba, repository, queueRepository, persistOperation) =>
  * @property {createTalentReturn} createTalent function to generate talent (instantiated).
  * @property {updateTalentReturn} updateTalent function to update talent  (instantiated).
  * @property {deleteTalentReturn} deleteTalent function to delete talent (instantiated).
+ * @property {matchTalentsFromOpeningReturn} matchTalentsFromOpening function to query  talents from matching (instantiated).
  */
 
 /**
@@ -284,4 +308,12 @@ const deleteTalent = (escriba, repository, queueRepository, persistOperation) =>
  * @param {string} id key of the data
  * @param {string} talentEconomicSegment partition key of the data
  * @returns {Promise<Talent>} task from repository
+ */
+
+/**
+ * This callback is displayed as part of the matchTalentsFromOpening function.
+ * @memberof adapters
+ * @callback matchTalentsFromOpeningReturn
+ * @param {Opening} opening data to use in query
+ * @returns {Promise<[Talent]>} task from repository
  */

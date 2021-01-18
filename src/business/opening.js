@@ -2,14 +2,14 @@
  * reference only imports (for documentation)
  */
 // eslint-disable-next-line no-unused-vars
-import { Opening, MutateOPeningInputCreate, MutateOPeningInputUpdate } from './index'
+import { Opening, MutateOPeningInputCreate, MutateOPeningInputUpdate, Talent } from './index'
 /**
  * code imports
  */
 import { v4 as uuidv4 } from 'uuid'
 import { toISOString } from './moment'
 import { ETalentRangeSalary, EOpeningStatus } from './constants'
-import { validateInnerArrayString } from './common'
+import { validateInnerArrayString, reduceContains } from './common'
 import R from 'ramda'
 import {
   EClassError,
@@ -154,3 +154,43 @@ export const validateDeleteOpening = (originalData) => {
 
   return originalData
 }
+
+/**
+ * @description Generate FilterExpression based on entry data for query
+ * @memberof business
+ * @function
+ * @throws {CustomError}
+ * @param {Talent} talent talent to filter in openings base
+ * @returns {FilterExpressionObject}
+ */
+export const generateFilterExpression = (talent) => {
+  const contains = talent.talentHardSkillsTags.reduce(reduceContains('openingHardSkillsTags'),
+    talent.talentSoftSkillsTags.reduce(reduceContains('openingSoftSkillsTags'),
+      talent.talentPositionTags.reduce(reduceContains('openingPositionTags'), {
+        expression: '',
+        value: {}
+      })
+    )
+  )
+
+  const containsExpression = R.isEmpty(contains.expression) ? '' : `AND (${contains.expression})`
+
+  return {
+    keyConditionExpression: `openingEconomicSegment = :openingEconomicSegment`,
+    filterExpression: ` openingStatus = :${EOpeningStatus.OPEN}
+  ${containsExpression}`,
+    expressionAttributeValuesQuery: R.assoc(`:${EOpeningStatus.OPEN}`, EOpeningStatus.OPEN,
+      {
+        ':openingEconomicSegment': talent.talentEconomicSegment,
+        ...contains.value
+      }
+    )
+  }
+}
+
+/**
+ * @typedef {Object} FilterExpressionObject
+ * @property {string} keyConditionExpression keys for filter inner hash key
+ * @property {string} filterExpression  advanced filter expression inner hash filtered values
+ * @property {Object} expressionAttributeValuesQuery  values from filter
+ */
