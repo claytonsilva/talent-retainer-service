@@ -1,10 +1,10 @@
 
-import { config as AWSConfigInstance, DynamoDB, SQS } from 'aws-sdk'
+import { config as AWSConfigInstance, DynamoDB, SQS, SNS } from 'aws-sdk'
 
-import { appConfig, AWSDynamoConfig, AWSSqsConfig, AWSConfig } from '../../config'
+import { appConfig, AWSDynamoConfig, AWSSqsConfig, AWSConfig, AWSSnsConfig } from '../../config'
 import { adapter } from '../../adapters'
 import { handleLogger } from '../logger/logger'
-import { databaseRepository, queueRepository } from '../state-machines'
+import { databaseRepository, queueRepository, eventRepository } from '../state-machines'
 import { getSafeBody, parseAPIGWResponse } from './common'
 
 /**
@@ -30,13 +30,18 @@ export const handler = async (event, context) => {
   // AWS SQS configuration
   const sqs = new SQS(AWSSqsConfig)
 
+  // AWS SNS configuration
+  const sns = new SNS(AWSSnsConfig)
+
   // inject repositories
   const talentRepoInstance = databaseRepository(dynamo, appConfig.talent.tableName)
   const openingRepoInstance = databaseRepository(dynamo, appConfig.opening.tableName)
   const talentQueueRepoInstance = queueRepository(sqs, appConfig.talent.queueUrl)
   const openingQueueRepoInstance = queueRepository(sqs, appConfig.opening.queueUrl)
+  const talentEventRepoInstance = eventRepository(sns, appConfig.talent.topicArn)
+  const openingEventRepoInstance = eventRepository(sns, appConfig.opening.topicArn)
 
-  const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, openingRepoInstance, openingQueueRepoInstance, appConfig.persistOperation)
+  const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, talentEventRepoInstance, openingRepoInstance, openingQueueRepoInstance, openingEventRepoInstance, appConfig.persistOperation)
 
   const getTalent = async () => {
     try {
