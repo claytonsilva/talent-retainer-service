@@ -16,6 +16,30 @@ resource "aws_dynamodb_table" "talent" {
   }
 }
 
+resource "aws_sns_topic" "talent_matches" {
+  name = "talents-matches"
+
+  delivery_policy = <<EOF
+{
+  "http": {
+    "defaultHealthyRetryPolicy": {
+      "minDelayTarget": 20,
+      "maxDelayTarget": 20,
+      "numRetries": 3,
+      "numMaxDelayRetries": 0,
+      "numNoDelayRetries": 0,
+      "numMinDelayRetries": 0,
+      "backoffFunction": "linear"
+    },
+    "disableSubscriptionOverrides": false,
+    "defaultThrottlePolicy": {
+      "maxReceivesPerSecond": 1
+    }
+  }
+}
+EOF
+}
+
 resource "aws_sqs_queue" "talent" {
   name                       = "${local.talent_queue_name}"
   max_message_size           = 8192
@@ -54,6 +78,30 @@ resource "aws_dynamodb_table" "opening" {
     name = "id"
     type = "S"
   }
+}
+
+resource "aws_sns_topic" "opening_matches" {
+  name = "openings-matches"
+
+  delivery_policy = <<EOF
+  {
+    "http": {
+      "defaultHealthyRetryPolicy": {
+        "minDelayTarget": 20,
+        "maxDelayTarget": 20,
+        "numRetries": 3,
+        "numMaxDelayRetries": 0,
+        "numNoDelayRetries": 0,
+        "numMinDelayRetries": 0,
+        "backoffFunction": "linear"
+      },
+      "disableSubscriptionOverrides": false,
+      "defaultThrottlePolicy": {
+        "maxReceivesPerSecond": 1
+      }
+    }
+  }
+  EOF
 }
 
 resource "aws_sqs_queue" "opening" {

@@ -12,6 +12,7 @@ provider "aws" {
     sqs        = "http://localhost:4566"
     lambda     = "http://localhost:4566"
     apigateway = "http://localhost:4566"
+    sns        = "http://localhost:4566"
 
     # sts for full experience without valid real profile on aws
     sts = "http://localhost:4566"
