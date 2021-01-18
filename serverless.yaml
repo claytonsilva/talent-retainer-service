@@ -70,10 +70,76 @@ functions:
         - jsdoc.conf.json
       individually: true # Enables individual packaging for specific function. If true you must provide package for each function. Defaults to false
       excludeDevDependencies: true
+  talentsworker: # A Function
+    handler: dist/ports/aws-lambda/talents-worker.handler # The file and module for this specific function.
+    name: talents-worker # optional, Deployed Lambda name
+    description: talents worker handler # The description of your function.
+    runtime: nodejs12.x # Runtime for this specific function. Overrides the default which is set on the provider level
+    timeout: 20 # optional, in seconds, default is 6, we recomend 10 seconds for local environment
+    package:
+      include: # Specify the directories and files which should be included in the deployment package for this specific function.
+        - dist/**
+      exclude: # Specify the directories and files which should be excluded in the deployment package for this specific function.
+        - src/**
+        - .*/**
+        - .*
+        - iaac/**
+        - mocks/**
+        - docs/**
+        - docker-compose.yml
+        - Dockerfile
+        - jest.config.js
+        - jsdoc.conf.json
+      individually: true # Enables individual packaging for specific function. If true you must provide package for each function. Defaults to false
+      excludeDevDependencies: true
   openings: # A Function
     handler: dist/ports/aws-lambda/openings.handler # The file and module for this specific function.
     name: openings # optional, Deployed Lambda name
     description: openings handler # The description of your function.
+    runtime: nodejs12.x # Runtime for this specific function. Overrides the default which is set on the provider level
+    timeout: 20 # optional, in seconds, default is 6, we recomend 10 seconds for local environment
+    package:
+      include: # Specify the directories and files which should be included in the deployment package for this specific function.
+        - dist/**
+      exclude: # Specify the directories and files which should be excluded in the deployment package for this specific function.
+        - src/**
+        - .*/**
+        - .*
+        - iaac/**
+        - mocks/**
+        - docs/**
+        - docker-compose.yml
+        - Dockerfile
+        - jest.config.js
+        - jsdoc.conf.json
+      individually: true # Enables individual packaging for specific function. If true you must provide package for each function. Defaults to false
+      excludeDevDependencies: true
+  openingsworker: # A Function
+    handler: dist/ports/aws-lambda/openings-worker.handler # The file and module for this specific function.
+    name: openings-worker # optional, Deployed Lambda name
+    description: openings worker handler # The description of your function.
+    runtime: nodejs12.x # Runtime for this specific function. Overrides the default which is set on the provider level
+    timeout: 20 # optional, in seconds, default is 6, we recomend 10 seconds for local environment
+    package:
+      include: # Specify the directories and files which should be included in the deployment package for this specific function.
+        - dist/**
+      exclude: # Specify the directories and files which should be excluded in the deployment package for this specific function.
+        - src/**
+        - .*/**
+        - .*
+        - iaac/**
+        - mocks/**
+        - docs/**
+        - docker-compose.yml
+        - Dockerfile
+        - jest.config.js
+        - jsdoc.conf.json
+      individually: true # Enables individual packaging for specific function. If true you must provide package for each function. Defaults to false
+      excludeDevDependencies: true
+  snsprinter: # A Function
+    handler: dist/ports/aws-lambda/sns-printer.handler # The file and module for this specific function.
+    name: sns-printer # optional, Deployed Lambda name
+    description: sns printer handler # The description of your function.
     runtime: nodejs12.x # Runtime for this specific function. Overrides the default which is set on the provider level
     timeout: 20 # optional, in seconds, default is 6, we recomend 10 seconds for local environment
     package:

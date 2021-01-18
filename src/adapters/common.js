@@ -55,10 +55,10 @@ export const sendPayloadtoQueue = (escriba, queueRepository) => async (payload, 
  * @param {EventRepositoryInstance} eventRepository state-machine queue methods
  * @returns {sendPayloadtoSNSTopicReturn} function to call createOpening direct
  */
-export const sendPayloadtoSNSTopic = (escriba, eventRepository) => async (payload, subject) => {
+export const sendPayloadtoSNSTopic = (escriba, eventRepository) => async (subject, payload) => {
   const methodPath = 'adapters.common.sendPayloadtoSNSTopic'
   try {
-    const result = await eventRepository.publishMessage(JSON.stringify(payload), subject)
+    const result = await eventRepository.publishMessage(subject, JSON.stringify(payload))
 
     escriba.info({
       action: 'SEND_PAYLOAD_TO_TOPIC',

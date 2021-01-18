@@ -1,0 +1,14 @@
+{
+	"Records": [
+		{
+			"body": "{\"operation\": \"MATCH\",\"payload\": {\"id\": \"ccb0cc6e-e89f-4f72-b47f-d2de73ac6e6d\",\"creationDate\": \"2021-01-18T10:37:32.488-03:00\",\"talentStatus\": \"OPEN\",\"talentLastSalaryRange\": \"BETWEEN10KAND15K\",\"talentResume\": \"Im happy \\n and i love my carreer\",\"talentName\": \"jose2\",\"talentSurname\": \"silverio dos reis\",\"talentEconomicSegment\": \"Tecnology\",\"talentSoftSkillsTags\": [\"leadership\"],\"talentHardSkillsTags\": [\"php\"],\"talentPositionTags\": [\"backend:senior\",\"backend:junior\",\"techleader\"]}}",
+			"receiptHandle": "udjzteqmqbmtobctxwdchbjhkadrrkrzwbebtrjojwccylnmmtrdfgnpdsjpbvjcwbtbbgqsmycicujhwnxricljmzhjipjufettbfcjwtzditcjhjuxdvgahhnhermhqyuiskrspattjbkdllkywjfazkhuoviwbaudcldvhyqbhhnhglovdbtba",
+			"md5OfBody": "35b23c4a4d3210899c45bba2ccb06634",
+			"eventSourceARN": "arn:aws:sqs:us-east-1: 000000000000:talent",
+			"eventSource": "aws:sqs",
+			"awsRegion": "us-east-1",
+			"messageId": "94af8b27-f8ac-051c-5c70-e550c46494c9",
+			"sqs": true
+		}
+	]
+}

@@ -23,6 +23,7 @@ import {
 import { validateUpdateOpening, validateCreateOpening, validateDeleteOpening, generateFilterExpression } from '../business/opening'
 import { EOperation, EPersistOperation, validatePersistOperation } from '../business/constants'
 import { sendPayloadtoQueue, sendPayloadtoSNSTopic } from './common'
+import { isNil } from 'ramda'
 
 /**
  * @description Opening adapter factory
@@ -112,6 +113,14 @@ const createOpening = (escriba, repository, queueRepository, persistOperation) =
       // if don't have have queue response, the request will fail
       await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'opening', EOperation.CREATE)
       return documentValidated
+    }
+
+    // validate eventual consistence for worker
+    if (params.id) {
+      const currObject = await getOpening(repository)(params.id, params.talentEconomicSegment)
+      if (!isNil(currObject)) {
+        return currObject
+      }
     }
 
     const documentInserted = await repository
@@ -266,6 +275,7 @@ const matchOpeningsFromTalent = (escriba, repository, eventRepository) => async 
     const matches = await repository.queryDocument(keyConditionExpression, filterExpression, expressionAttributeValuesQuery)
     if (matches.length) {
       await sendPayloadtoSNSTopic(escriba, eventRepository)(
+        'openings-matches',
         matches
           .map(opening => `id: ${opening.id} / job: ${opening.openingJobName} / company: ${opening.openingJobName}`)
       )

@@ -23,6 +23,7 @@ import {
 import { validateUpdateTalent, validateCreateTalent, validateDeleteTalent, generateFilterExpression } from '../business/talent'
 import { EOperation, EPersistOperation, validatePersistOperation } from '../business/constants'
 import { sendPayloadtoQueue, sendPayloadtoSNSTopic } from './common'
+import { isNil } from 'ramda'
 
 /**
  * @description Talent adapter factory
@@ -112,6 +113,14 @@ const createTalent = (escriba, repository, queueRepository, persistOperation) =>
       // if don't have have queue response, the request will fail
       await sendPayloadtoQueue(escriba, queueRepository)(documentValidated, 'talent', EOperation.CREATE)
       return documentValidated
+    }
+
+    // validate eventual consistence for worker
+    if (params.id) {
+      const currObject = await getTalent(repository)(params.id, params.talentEconomicSegment)
+      if (!isNil(currObject)) {
+        return currObject
+      }
     }
 
     const documentInserted = await repository
@@ -267,6 +276,7 @@ const matchTalentsFromOpening = (escriba, repository, eventRepository) => async 
 
     if (matches.length) {
       await sendPayloadtoSNSTopic(escriba, eventRepository)(
+        'talents-matches',
         matches
           .map(talent => `id: ${talent.id} / name: ${talent.talentName} / surname: ${talent.talentSurname}`)
       )

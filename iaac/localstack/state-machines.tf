@@ -17,7 +17,7 @@ resource "aws_dynamodb_table" "talent" {
 }
 
 resource "aws_sns_topic" "talent_matches" {
-  name = "talents-matches"
+  name = "${local.talent_topic_name}"
 
   delivery_policy = <<EOF
 {
@@ -81,7 +81,7 @@ resource "aws_dynamodb_table" "opening" {
 }
 
 resource "aws_sns_topic" "opening_matches" {
-  name = "openings-matches"
+  name = "${local.opening_topic_name}"
 
   delivery_policy = <<EOF
   {
