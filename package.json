@@ -50,6 +50,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.582.0",
+    "bluebird": "^3.7.2",
     "body-parser": "^1.19.0",
     "cuid": "^2.1.8",
     "debug": "^4.1.1",
