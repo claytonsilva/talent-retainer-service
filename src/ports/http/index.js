@@ -8,10 +8,10 @@
 
 import express from 'express'
 import bodyParser from 'body-parser'
-import { config as AWSConfigInstance, DynamoDB, SQS } from 'aws-sdk'
-import { databaseRepository, queueRepository } from '../state-machines'
+import { config as AWSConfigInstance, DynamoDB, SQS, SNS } from 'aws-sdk'
+import { databaseRepository, queueRepository, eventRepository } from '../state-machines'
 import { adapter } from '../../adapters'
-import { appConfig, AWSDynamoConfig, AWSSqsConfig, AWSConfig } from '../../config'
+import { appConfig, AWSDynamoConfig, AWSSqsConfig, AWSConfig, AWSSnsConfig } from '../../config'
 import { getRoutes } from './routes/index'
 import { handleLogger } from '../logger'
 
@@ -30,12 +30,17 @@ const dynamo = new DynamoDB.DocumentClient(AWSDynamoConfig)
 // AWS SQS configuration
 const sqs = new SQS(AWSSqsConfig)
 
+// AWS SNS configuration
+const sns = new SNS(AWSSnsConfig)
+
 // inject repositories
 const talentRepoInstance = databaseRepository(dynamo, appConfig.talent.tableName)
 const openingRepoInstance = databaseRepository(dynamo, appConfig.opening.tableName)
 const talentQueueRepoInstance = queueRepository(sqs, appConfig.talent.queueUrl)
 const openingQueueRepoInstance = queueRepository(sqs, appConfig.opening.queueUrl)
-const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, openingRepoInstance, openingQueueRepoInstance, appConfig.persistOperation)
+const talentEventRepoInstance = eventRepository(sns, appConfig.talent.topicArn)
+const openingEventRepoInstance = eventRepository(sns, appConfig.opening.topicArn)
+const adapterInstance = adapter(escriba, talentRepoInstance, talentQueueRepoInstance, talentEventRepoInstance, openingRepoInstance, openingQueueRepoInstance, openingEventRepoInstance, appConfig.persistOperation)
 
 _app.use(bodyParser.json({ limit: '50mb' }))
 _app.use(bodyParser.urlencoded({ extended: false }))

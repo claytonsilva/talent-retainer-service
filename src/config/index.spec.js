@@ -1,4 +1,4 @@
-import { AWSConfig, AWSDynamoConfig, AWSS3Config, AWSSqsConfig, appConfig, momentConfig, escribaConf, envProdName } from './index'
+import { AWSConfig, AWSDynamoConfig, AWSS3Config, AWSSnsConfig, AWSSqsConfig, appConfig, momentConfig, escribaConf, envProdName } from './index'
 
 describe('config', () => {
   test('AWSConfig', () => {
@@ -16,6 +16,13 @@ describe('config', () => {
     expect(AWSS3Config).toHaveProperty('region')
     expect(AWSS3Config).toHaveProperty('apiVersion', '2006-03-01')
   })
+
+  test('AWSSnsConfig', () => {
+    expect(AWSSnsConfig).toHaveProperty('region')
+    expect(AWSSnsConfig).toHaveProperty('apiVersion', '2010-03-31')
+    expect(AWSSnsConfig).toHaveProperty('endpoint')
+  })
+
   test('AWSSqsConfig', () => {
     expect(AWSSqsConfig).toHaveProperty('region')
     expect(AWSSqsConfig).toHaveProperty('apiVersion', '2012-11-05')
@@ -36,8 +43,10 @@ describe('config', () => {
     expect(appConfig).toHaveProperty('opening')
     expect(appConfig.talent).toHaveProperty('tableName', 'talent')
     expect(appConfig.talent).toHaveProperty('queueUrl', 'talent')
+    expect(appConfig.talent).toHaveProperty('topicArn', 'talent')
     expect(appConfig.opening).toHaveProperty('tableName', 'opening')
     expect(appConfig.opening).toHaveProperty('queueUrl', 'opening')
+    expect(appConfig.opening).toHaveProperty('topicArn', 'opening')
   })
   test('escribaConf', () => {
     expect(escribaConf).toHaveProperty('log4jsConf')

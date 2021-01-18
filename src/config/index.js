@@ -49,6 +49,19 @@ const AWSSqsConfig = R.merge(
 )
 
 /**
+ * aws sns configuration
+ * @memberof config
+ */
+const AWSSnsConfig = R.merge(
+  AWSConfig,
+  {
+    region: getEnv('AWS_SNS_REGION'),
+    apiVersion: getEnv('AWS_SNS_APIVERSION', '2010-03-31'),
+    endpoint: getEnv('AWS_SNS_ENDPOINT')
+  }
+)
+
+/**
  * aws s3 configuration
  * @memberof config
  */
@@ -81,11 +94,14 @@ const appConfig = {
   envName: getEnv('NODE_ENV'),
   talent: {
     tableName: getEnv('AWS_DYNAMO_TALENT_TABLE_NAME', 'talent'),
-    queueUrl: getEnv('AWS_SQS_TALENT_QUEUE_URL', 'talent')
+    queueUrl: getEnv('AWS_SQS_TALENT_QUEUE_URL', 'talent'),
+    topicArn: getEnv('AWS_SNS_TALENT_TOPIC_ARN', 'talent')
+
   },
   opening: {
     tableName: getEnv('AWS_DYNAMO_OPENING_TABLE_NAME', 'opening'),
-    queueUrl: getEnv('AWS_SQS_OPENING_QUEUE_URL', 'opening')
+    queueUrl: getEnv('AWS_SQS_OPENING_QUEUE_URL', 'opening'),
+    topicArn: getEnv('AWS_SNS_OPENING_TOPIC_ARN', 'opening')
   }
 }
 
@@ -128,6 +144,7 @@ export {
   AWSDynamoConfig,
   AWSS3Config,
   AWSSqsConfig,
+  AWSSnsConfig,
   escribaConf,
   envProdName,
   momentConfig
