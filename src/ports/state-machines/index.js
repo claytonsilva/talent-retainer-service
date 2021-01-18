@@ -10,7 +10,7 @@
  * reference doc only imports
  */
 // eslint-disable-next-line no-unused-vars
-import { DynamoDB } from 'aws-sdk'
+import { DynamoDB, SNS, SQS } from 'aws-sdk'
 // eslint-disable-next-line no-unused-vars
 import { Moment } from 'moment'
 /**
@@ -21,6 +21,12 @@ import {
   // eslint-disable-next-line no-unused-vars
   sendMessageReturn, deleteMessageReturn, receiveMessageReturn
 } from './aws.sqs'
+
+import {
+  publishMessage,
+  // eslint-disable-next-line no-unused-vars
+  publishMessageReturn
+} from './aws.sns'
 import { updateDocument, getDocument, putDocument, deleteDocument, queryDocument } from './aws.dynamo'
 
 /***
@@ -51,7 +57,7 @@ export const databaseRepository = (dynamo, tableName) => {
  *
  * @memberof ports/state-machines
  * @function
- * @param {sqs} sqs instance of SQS
+ * @param {SQS} sqs instance of SQS
  * @param {string} queueUrl queue url string
  * @param {number} maxNumberOfMessages max messages to collect in single call
  * @returns {QueueRepositoryInstance}
@@ -61,6 +67,21 @@ export const queueRepository = (sqs, queueUrl, maxNumberOfMessages) => {
     sendMessage: sendMessage(sqs, queueUrl),
     receiveMessage: receiveMessage(sqs, queueUrl, maxNumberOfMessages),
     deleteMessage: deleteMessage(sqs, queueUrl)
+  }
+}
+
+/**
+ * @description event topic repository for state machine
+ *
+ * @memberof ports/state-machines
+ * @function
+ * @param {SNS} sns instance of SNS
+ * @param {string} topicArn arn from SNS topic.
+ * @returns {QueueRepositoryInstance}
+ */
+export const eventRepository = (sns, topicArn) => {
+  return {
+    publishMessage: publishMessage(sns, topicArn)
   }
 }
 
@@ -81,6 +102,11 @@ export const queueRepository = (sqs, queueUrl, maxNumberOfMessages) => {
  * @property {sendMessageReturn} sendMessage function to send message to sqs (instantiated).
  * @property {receiveMessageReturn} receiveMessage function to receive message from sqs (instantiated).
  * @property {deleteMessageReturn} deleteMessage function to delete message from sqs (instantiated).
+ */
+
+/**
+ * @typedef {Object} EventRepositoryInstance
+ * @property {publishMessageReturn} publishMessage function to send message (event) to topic (instantiated).
  */
 
 /**
