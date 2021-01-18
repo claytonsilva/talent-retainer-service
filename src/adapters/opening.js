@@ -270,7 +270,7 @@ const matchOpeningsFromTalent = (escriba, repository, eventRepository) => async 
     const { keyConditionExpression, filterExpression, expressionAttributeValuesQuery } = generateFilterExpression(talent)
     /**
      * @constant
-     * @type {[Opening]}
+     * @type {Array<Opening>}
      */
     const matches = await repository.queryDocument(keyConditionExpression, filterExpression, expressionAttributeValuesQuery)
     if (matches.length) {
@@ -341,5 +341,5 @@ const matchOpeningsFromTalent = (escriba, repository, eventRepository) => async 
  * @memberof adapters
  * @callback matchOpeningsFromTalentReturn
  * @param {Talent} talent data to use in query
- * @returns {Promise<[Opening]>} task from repository
+ * @returns {Promise<Array<Opening>>} task from repository
  */
