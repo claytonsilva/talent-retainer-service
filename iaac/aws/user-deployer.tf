@@ -21,6 +21,7 @@ data "aws_iam_policy_document" "policydocument" {
     sid = "ManageRepositoryContents"
 
     actions = [
+      "s3:GetObject",
       "s3:ReplicateObject",
       "s3:PutObject",
       "s3:PutAccelerateConfiguration",

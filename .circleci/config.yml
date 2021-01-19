@@ -60,11 +60,11 @@ jobs:
       - run: aws s3 cp ./.serverless/talents.zip s3://${LAMBDA_BUCKET_REPO}/talents/stable/$CIRCLE_TAG.zip
       - run: aws lambda update-function-code --function-name talents --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key talents/stable/$CIRCLE_TAG.zip
       - run: aws s3 cp ./.serverless/openingsworker.zip s3://${LAMBDA_BUCKET_REPO}/openingsworker/stable/$CIRCLE_TAG.zip
-      - run: aws lambda update-function-code --function-name openingsworker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key openingsworker/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name openings-worker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key openingsworker/stable/$CIRCLE_TAG.zip
       - run: aws s3 cp ./.serverless/talentsworker.zip s3://${LAMBDA_BUCKET_REPO}/talentsworker/stable/$CIRCLE_TAG.zip
-      - run: aws lambda update-function-code --function-name talentsworker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key talentsworker/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name talents-worker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key talentsworker/stable/$CIRCLE_TAG.zip
       - run: aws s3 cp ./.serverless/snsprinter.zip s3://${LAMBDA_BUCKET_REPO}/snsprinter/stable/$CIRCLE_TAG.zip
-      - run: aws lambda update-function-code --function-name snsprinter --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key snsprinter/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name sns-printer --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key snsprinter/stable/$CIRCLE_TAG.zip
   build-and-test-and-send-to-stryker:
     executor:
       name: node/default
