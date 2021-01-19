@@ -124,7 +124,7 @@ workflows:
             tags:
               only: /^v([0-9]+).([0-9]+).([0-9]+)(-alpha\.[0-9]+|)$/
           requires:
-            - install-and-test
+            - build-and-test
       - deploy-prd:
           filters:
             branches:
@@ -132,4 +132,4 @@ workflows:
             tags:
               only: /^v([0-9]+).([0-9]+).([0-9]+)$/
           requires:
-            - hold
+            - generate-artifacts
