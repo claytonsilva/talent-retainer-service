@@ -43,3 +43,11 @@ output "deployer_key" {
 output "deployer_secret_key" {
   value = "${module.user_deployer.secret_key}"
 }
+
+output "url_apigw_opening" {
+  value = "${aws_api_gateway_deployment.opening.invoke_url}"
+}
+
+output "url_apigw_talent" {
+  value = "${aws_api_gateway_deployment.talent.invoke_url}"
+}
