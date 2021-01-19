@@ -2,31 +2,85 @@ version: 2.1
 orbs:
   node: circleci/node@2.0.1
   coveralls: coveralls/coveralls@1.0.4
+  aws-cli: circleci/aws-cli@1.3.0
 jobs:
   build-and-test:
     executor:
       name: node/default
       tag: "12.20.0"
+    working_directory: ~/repository
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y tzdata
       - run: sudo ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
       - checkout
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
       - run: yarn
       - run: yarn test-ci
       - coveralls/upload:
           path_to_lcov: "./reports/coverage/lcov.info"
       - store_test_results:
           path: test-results
+      - save_cache:
+          paths:
+            - node_modules # location depends on npm version
+          key: node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+  generate-artifacts:
+    executor:
+      name: node/default
+      tag: "12.20.0"
+    working_directory: ~/repository
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
+      - run: yarn build-lambda
+      - persist_to_workspace:
+          root: ~/repository
+          paths:
+            - .serverless
+  deploy-prd:
+    executor: aws-cli/default
+    working_directory: ~/repository
+    steps:
+      - aws-cli/setup
+      - attach_workspace:
+          at: ~/repository
+      - run: aws s3 cp ./.serverless/openings.zip s3://${LAMBDA_BUCKET_REPO}/openings/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name openings --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key openings/stable/$CIRCLE_TAG.zip
+      - run: aws s3 cp ./.serverless/talents.zip s3://${LAMBDA_BUCKET_REPO}/talents/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name talents --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key talents/stable/$CIRCLE_TAG.zip
+      - run: aws s3 cp ./.serverless/openingsworker.zip s3://${LAMBDA_BUCKET_REPO}/openingsworker/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name openings-worker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key openingsworker/stable/$CIRCLE_TAG.zip
+      - run: aws s3 cp ./.serverless/talentsworker.zip s3://${LAMBDA_BUCKET_REPO}/talentsworker/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name talents-worker --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key talentsworker/stable/$CIRCLE_TAG.zip
+      - run: aws s3 cp ./.serverless/snsprinter.zip s3://${LAMBDA_BUCKET_REPO}/snsprinter/stable/$CIRCLE_TAG.zip
+      - run: aws lambda update-function-code --function-name sns-printer --s3-bucket ${LAMBDA_BUCKET_REPO} --s3-key snsprinter/stable/$CIRCLE_TAG.zip
   build-and-test-and-send-to-stryker:
     executor:
       name: node/default
       tag: "12.20.0"
+    working_directory: ~/repository
     steps:
       - run: sudo apt-get update
       - run: sudo apt-get install -y tzdata
       - run: sudo ln -fs /usr/share/zoneinfo/America/Sao_Paulo /etc/localtime
       - checkout
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - node-v1-{{ .Branch }}-
+            - node-v1-
       - run: yarn
       - run: yarn test-ci
       - run:
@@ -36,14 +90,46 @@ jobs:
           path_to_lcov: "./reports/coverage/lcov.info"
       - store_test_results:
           path: test-results
+      - save_cache:
+          paths:
+            - node_modules # location depends on npm version
+          key: node-v1-{{ .Branch }}-{{ checksum "yarn.lock" }}
 workflows:
   build-and-test:
     jobs:
       - build-and-test:
           filters:
+            tags:
+              ignore: /.*/
             branches:
               ignore: /^main/
       - build-and-test-and-send-to-stryker:
           filters:
+            tags:
+              ignore: /.*/
             branches:
               ignore: /^(?!main).*$/
+  deploy-lambdas:
+    jobs:
+      - build-and-test:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v([0-9]+).([0-9]+).([0-9]+)(-alpha\.[0-9]+|)$/
+      - generate-artifacts:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v([0-9]+).([0-9]+).([0-9]+)(-alpha\.[0-9]+|)$/
+          requires:
+            - build-and-test
+      - deploy-prd:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v([0-9]+).([0-9]+).([0-9]+)$/
+          requires:
+            - generate-artifacts

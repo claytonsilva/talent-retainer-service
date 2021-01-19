@@ -31,3 +31,15 @@ output "services_api_id" {
 output "api_key" {
   value = "${aws_api_gateway_api_key.developer.value}"
 }
+
+output "lambda_s3_repo_name" {
+  value = "${module.s3.lambda_bucket}"
+}
+
+output "deployer_key" {
+  value = "${module.user_deployer.key}"
+}
+
+output "deployer_secret_key" {
+  value = "${module.user_deployer.secret_key}"
+}

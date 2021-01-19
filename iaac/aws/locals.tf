@@ -1,4 +1,7 @@
 locals {
+  # deploy
+  user_deployer_name = "${var.project_name}-circleci-deployer"
+
   # talent
   dynamodb_table_name_talent = "talent"
   talent_topic_name          = "talents-matches"
